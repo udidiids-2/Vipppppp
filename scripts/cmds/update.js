@@ -61,8 +61,8 @@ module.exports = {
 
 	onStart: async function ({ message, getLang, commandName, event }) {
 		// Check for updates
-		const { data: { version } } = await axios.get("https://raw.githubusercontent.com/sheikhtamimlover/ST-BOT/main/package.json");
-		const { data: versions } = await axios.get("https://raw.githubusercontent.com/sheikhtamimlover/ST-BOT/main/versions.json");
+		const { data: { version } } = await axios.get("https://raw.githubusercontent.com/sheikhtamimlover/ST-BOT/refs/heads/main/package.json");
+		const { data: versions } = await axios.get("https://raw.githubusercontent.com/sheikhtamimlover/ST-BOT/refs/heads/main/versions.json");
 
 		const currentVersion = require("../../package.json").version;
 		if (compareVersion(version, currentVersion) < 1)
