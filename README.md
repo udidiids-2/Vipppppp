@@ -24,7 +24,6 @@ A customized and powerful multi-purpose chatbot framework for Facebook Messenger
 ### 🖥 Local Setup
 
 ```bash
-git clone https://github.com/sheikhtamimlover/ST-BOT.git
-cd ST-BOT
+git clone https://github.com/sheikhtamimlover/ST-BOT.git && cp -r ST-BOT/. . && rm -rf ST-BOT
 npm install
 npm start
