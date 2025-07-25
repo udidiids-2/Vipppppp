@@ -4,7 +4,7 @@ const fs = require("fs-extra");
 module.exports = {
   config: {
     name: "geminigen",
-    version: "1.3",
+    version: "1.4",
     author: "@RI F AT (edited by Ew'r Saim) ", // Do not change author
     description: "Generate or edit image using prompt (reply to image to edit it)",
     usage: "[prompt] or reply to image",

@@ -2500,5 +2500,11 @@
 		"files": {
 			"script/cmds/geminigen.js": "added"
 		}
+	},
+	{
+		"version": "2.0.02",
+		"files":{
+			"scripts/cmds/geminigen.js": "changed version"
+		}
 	}
 ]
