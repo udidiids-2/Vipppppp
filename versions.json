@@ -1,5 +1,12 @@
 [
 	{
 		"version": "2.0.00"
+	},
+	{
+		"version": "2.0.01",
+		"files": {
+			"scripts/cmds/help.js": "new version",
+			".replit": "prb fix"
+		}
 	}
 ]
