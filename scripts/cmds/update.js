@@ -128,7 +128,7 @@ module.exports = {
 
 		await message.reply(getLang("updateConfirmed"));
 		// Update chatbot
-		execSync("node update", {
+		execSync("node updater", {
 			stdio: "inherit"
 		});
 		fs.writeFileSync(dirBootLogTemp, event.threadID);
