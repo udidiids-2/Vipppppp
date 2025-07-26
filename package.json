@@ -1,6 +1,6 @@
 {
   "name": "st-bot",
-  "version": "2.0.03",
+  "version": "2.0.00",
   "description": "A simple Bot chat messenger using personal account. Made by ST | Sheikh Tamim",
   "main": "index.js",
   "engines": {
@@ -66,7 +66,14 @@
     "bot",
     "chatbot",
     "st-bot",
-    "sheikh-tamim"
+    "sheikh-tamim",
+    "sheikhtamimlover",
+    "st bot",
+    "goatbot",
+    "goatbot v2",
+    "fca",
+    "fb chat api",
+    "fca bot"
   ],
   "bugs": {
     "url": "https://github.com/sheikhtamimlover/ST-BOT/issues"
