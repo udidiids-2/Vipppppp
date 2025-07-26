@@ -1,163 +1,272 @@
-
 const express = require("express");
-const router = express.Router();
 const os = require("os");
+const fs = require("fs-extra");
 const path = require("path");
-const fs = require("fs");
 
-module.exports = function ({ isAuthenticated, threadsData, usersData }) {
-	// Simple rate limiting function
-	const createLimiter = (windowMs, max) => {
-		const requests = new Map();
+module.exports = ({ isAuthenticated, threadsData, usersData }) => {
+    const router = express.Router();
 
-		return (req, res, next) => {
-			const key = req.ip || req.connection.remoteAddress;
-			const now = Date.now();
+    // Get real-time stats
+    router.get("/stats", (req, res) => {
+        try {
+            // Calculate uptime
+            const uptimeSeconds = Math.floor(process.uptime());
+            const hours = Math.floor(uptimeSeconds / 3600);
+            const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+            const seconds = uptimeSeconds % 60;
+            let uptime = '';
+            if (hours > 0) uptime += `${hours}h `;
+            if (minutes > 0) uptime += `${minutes}m `;
+            uptime += `${seconds}s`;
 
-			if (!requests.has(key)) {
-				requests.set(key, { count: 1, resetTime: now + windowMs });
-				return next();
-			}
+            // Get memory usage
+            const memoryUsage = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2) + " MB";
 
-			const record = requests.get(key);
-			if (now > record.resetTime) {
-				record.count = 1;
-				record.resetTime = now + windowMs;
-				return next();
-			}
+            // Get user and thread counts
+            const totalUsers = global.db?.allUserData?.length || 0;
+            const totalThreads = global.db?.allThreadData?.length || 0;
 
-			if (record.count >= max) {
-				return res.status(429).json({ error: "Too many requests" });
-			}
+            res.json({
+                success: true,
+                totalUsers,
+                totalThreads,
+                uptime,
+                memoryUsage,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error("Stats API error:", error);
+            res.status(500).json({
+                success: false,
+                error: true,
+                message: error.message
+            });
+        }
+    });
 
-			record.count++;
-			next();
-		};
-	};
+    // Restart bot
+    router.post("/restart", (req, res) => {
+        try {
+            res.json({
+                success: true,
+                message: "Bot restart initiated"
+            });
 
-	const apiLimiter = createLimiter(1000 * 60 * 5, 100);
+            // Restart after response is sent
+            setTimeout(() => {
+                process.exit(2);
+            }, 1000);
+        } catch (error) {
+            console.error("Restart API error:", error);
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    });
 
-	// Apply rate limiting to all API routes
-	router.use(apiLimiter);
+    // Get Facebook cookies
+    router.get("/cookies", (req, res) => {
+        try {
+            const cookiePath = path.join(process.cwd(), "account.txt");
+            if (fs.existsSync(cookiePath)) {
+                const cookies = fs.readFileSync(cookiePath, "utf8");
+                res.json({
+                    success: true,
+                    cookies: cookies,
+                    lastModified: fs.statSync(cookiePath).mtime
+                });
+            } else {
+                res.json({
+                    success: false,
+                    message: "No cookies file found"
+                });
+            }
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    });
 
-	// Stats endpoint for real-time updates
-	router.get("/stats", async (req, res) => {
-		try {
-			const totalUsers = global.db?.allUserData?.length || 0;
-			const totalThreads = global.db?.allThreadData?.length || 0;
-			
-			// Calculate uptime
-			const uptimeSeconds = Math.floor(process.uptime());
-			const hours = Math.floor(uptimeSeconds / 3600);
-			const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-			const seconds = uptimeSeconds % 60;
-			let uptime = '';
-			if (hours > 0) uptime += `${hours}h `;
-			if (minutes > 0) uptime += `${minutes}m `;
-			uptime += `${seconds}s`;
+    // Update Facebook cookies
+    router.post("/cookies", (req, res) => {
+        try {
+            const { cookies } = req.body;
+            if (!cookies) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Cookies data is required"
+                });
+            }
 
-			const memoryUsage = `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`;
+            const cookiePath = path.join(process.cwd(), "account.txt");
+            fs.writeFileSync(cookiePath, cookies, "utf8");
+            
+            res.json({
+                success: true,
+                message: "Cookies updated successfully"
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    });
 
-			res.json({
-				totalUsers,
-				totalThreads,
-				uptime,
-				memoryUsage,
-				status: "online",
-				timestamp: new Date().toISOString()
-			});
-		} catch (error) {
-			console.error("API Stats error:", error);
-			res.json({
-				error: false,
-				totalUsers: 0,
-				totalThreads: 0,
-				uptime: "Unknown",
-				memoryUsage: "Unknown",
-				status: "error"
-			});
-		}
-	});
+    // Get bot configuration
+    router.get("/config", (req, res) => {
+        try {
+            const configPath = path.join(process.cwd(), "config.json");
+            if (fs.existsSync(configPath)) {
+                const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+                res.json({
+                    success: true,
+                    config: config
+                });
+            } else {
+                res.json({
+                    success: false,
+                    message: "Config file not found"
+                });
+            }
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    });
 
-	// System info endpoint
-	router.get("/system", async (req, res) => {
-		try {
-			const systemInfo = {
-				platform: os.platform(),
-				arch: os.arch(),
-				nodeVersion: process.version,
-				uptime: Math.floor(process.uptime()),
-				totalMemory: (os.totalmem() / 1024 / 1024 / 1024).toFixed(2) + " GB",
-				freeMemory: (os.freemem() / 1024 / 1024 / 1024).toFixed(2) + " GB",
-				memoryUsed: (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2) + " MB",
-				cpus: os.cpus().length,
-				hostname: os.hostname(),
-				loadAverage: os.loadavg()
-			};
+    // Update bot configuration
+    router.post("/config", (req, res) => {
+        try {
+            const { config } = req.body;
+            if (!config) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Configuration data is required"
+                });
+            }
 
-			res.json(systemInfo);
-		} catch (error) {
-			console.error("API System error:", error);
-			res.status(500).json({ error: "Failed to fetch system info" });
-		}
-	});
+            const configPath = path.join(process.cwd(), "config.json");
+            fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+            
+            res.json({
+                success: true,
+                message: "Configuration updated successfully"
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    });
 
-	// Restart endpoint
-	router.post("/restart", async (req, res) => {
-		try {
-			// Create restart file to track restart
-			const restartFile = path.join(__dirname, "../tmp/restart.txt");
-			const tmpDir = path.dirname(restartFile);
-			
-			// Ensure tmp directory exists
-			if (!fs.existsSync(tmpDir)) {
-				fs.mkdirSync(tmpDir, { recursive: true });
-			}
-			
-			// Write restart info
-			fs.writeFileSync(restartFile, `Dashboard restart at ${new Date().toISOString()}`);
+    // Update bot (git pull)
+    router.post("/update", (req, res) => {
+        try {
+            const { spawn } = require("child_process");
+            
+            res.json({
+                success: true,
+                message: "Update initiated"
+            });
 
-			res.json({
-				success: true,
-				message: "Bot restart initiated successfully"
-			});
+            // Run git pull
+            const updateProcess = spawn("git", ["pull"], {
+                cwd: process.cwd(),
+                stdio: "inherit"
+            });
 
-			// Restart after sending response
-			setTimeout(() => {
-				console.log("Dashboard: Restarting bot...");
-				process.exit(2);
-			}, 1000);
+            updateProcess.on("close", (code) => {
+                if (code === 0) {
+                    console.log("Update completed successfully");
+                    // Restart after update
+                    setTimeout(() => {
+                        process.exit(2);
+                    }, 2000);
+                } else {
+                    console.log("Update failed with code:", code);
+                }
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    });
 
-		} catch (error) {
-			console.error("Restart error:", error);
-			res.status(500).json({
-				success: false,
-				message: "Failed to restart bot: " + error.message
-			});
-		}
-	});
+    // Get system info with accurate stats
+    router.get("/system", (req, res) => {
+        try {
+            // Get more accurate user/thread counts
+            let totalUsers = 0;
+            let totalThreads = 0;
+            
+            if (global.db && global.db.allUserData) {
+                totalUsers = global.db.allUserData.length;
+            }
+            
+            if (global.db && global.db.allThreadData) {
+                totalThreads = global.db.allThreadData.length;
+            }
 
-	// Logs endpoint
-	router.get("/logs", (req, res) => {
-		try {
-			// Simple logs endpoint - shows recent console output
-			const logs = [
-				`Bot Status: Running`,
-				`Uptime: ${Math.floor(process.uptime())} seconds`,
-				`Memory Usage: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`,
-				`Platform: ${os.platform()}`,
-				`Node Version: ${process.version}`,
-				`Total Users: ${global.db?.allUserData?.length || 0}`,
-				`Total Threads: ${global.db?.allThreadData?.length || 0}`,
-				`Last Updated: ${new Date().toISOString()}`
-			];
+            // Calculate accurate uptime
+            const uptimeSeconds = Math.floor(process.uptime());
+            const days = Math.floor(uptimeSeconds / (24 * 3600));
+            const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
+            const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+            const seconds = uptimeSeconds % 60;
+            
+            let uptime = '';
+            if (days > 0) uptime += `${days}d `;
+            if (hours > 0) uptime += `${hours}h `;
+            if (minutes > 0) uptime += `${minutes}m `;
+            uptime += `${seconds}s`;
 
-			res.setHeader('Content-Type', 'text/plain');
-			res.send(logs.join('\n'));
-		} catch (error) {
-			res.status(500).send('Error fetching logs: ' + error.message);
-		}
-	});
+            // Get memory usage
+            const memUsage = process.memoryUsage();
+            const memoryUsed = (memUsage.heapUsed / 1024 / 1024).toFixed(2);
+            const memoryTotal = (memUsage.heapTotal / 1024 / 1024).toFixed(2);
 
-	return router;
+            res.json({
+                success: true,
+                totalUsers,
+                totalThreads,
+                uptime,
+                memoryUsed: memoryUsed + " MB",
+                memoryTotal: memoryTotal + " MB",
+                nodeVersion: process.version,
+                platform: os.platform(),
+                arch: os.arch(),
+                cpus: os.cpus().length,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    });
+
+    // Health check endpoint
+    router.get("/health", (req, res) => {
+        res.json({
+            status: "ok",
+            uptime: Math.floor(process.uptime()),
+            timestamp: new Date().toISOString(),
+            memory: {
+                used: (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2) + " MB",
+                total: (os.totalmem() / 1024 / 1024 / 1024).toFixed(2) + " GB"
+            }
+        });
+    });
+
+    return router;
 };

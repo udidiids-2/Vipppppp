@@ -119,7 +119,7 @@
     ],
     "onlyAdminBot": false,
     "deleteMessage": true,
-    "notes": "If enabled, bot will unsend messages when someone reacts with specified emojis. Set onlyAdminBot to true if only bot admins can trigger this feature."
+    "notes": "If enabled, bot will unsend BOT MESSAGES ONLY when someone reacts with specified emojis. This only works on messages sent by the bot, not user messages. Set onlyAdminBot to true if only bot admins can trigger this feature."
   },
   "hideNotiMessage": {
     "commandNotFound": false,
@@ -151,6 +151,6 @@
     "selfListenEvent": true,
     "autoMarkDelivery": false,
     "autoReconnect": false,
-    "notes": "Document here: https://github.com/ntkhang03/fb-chat-api/blob/master/DOCS.md#apisetoptionsoptions "
+    "notes": "Document here: https://github.com/sheikhtamimlover/fb-chat-api/blob/master/DOCS.md#apisetoptionsoptions "
   }
 }

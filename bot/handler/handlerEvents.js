@@ -738,16 +738,24 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			if (antiReact.onlyAdminBot && !config.adminBot.includes(userID))
 				return;
 
-			// Skip getMessage and directly unsend if configured
-			if (reactMessageID && global.GoatBot.botID && antiReact.deleteMessage) {
-				try {
+			// Get message info to check if it was sent by the bot
+			try {
+				const messageInfo = await api.getMessage(threadID, reactMessageID);
+				const botID = api.getCurrentUserID();
+				
+				// Only proceed if the message was sent by the bot
+				if (messageInfo && messageInfo.senderID !== botID)
+					return;
+
+				// Skip getMessage and directly unsend if configured
+				if (reactMessageID && global.GoatBot.botID && antiReact.deleteMessage) {
 					await api.unsendMessage(reactMessageID);
-					log.info("ANTI REACT", `Successfully unsent message ${reactMessageID} due to ${reaction} reaction`);
-				} catch (unsendErr) {
-					// Only log if it's not the common Facebook API error
-					if (!unsendErr.message?.includes('field_exception') && !unsendErr.message?.includes('Query error')) {
-						log.warn("ANTI REACT", `Failed to unsend message ${reactMessageID}:`, unsendErr.message);
-					}
+					log.info("ANTI REACT", `Successfully unsent bot message ${reactMessageID} due to ${reaction} reaction`);
+				}
+			} catch (err) {
+				// Only log if it's not the common Facebook API error about getMessage
+				if (!err.message?.includes('field_exception') && !err.message?.includes('Query error') && !err.message?.includes('Cannot retrieve message')) {
+					log.warn("ANTI REACT", `Failed to process anti-react for message ${reactMessageID}:`, err.message);
 				}
 			}
 		}
