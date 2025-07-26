@@ -65,12 +65,12 @@ function centerText(text, length) {
 // logo
 const titles = [
 	[
-		"███████╗████████╗    ██████╗  ██████╗ ████████╗   ",
-		"██╔════╝╚══██╔══╝    ██╔══██╗██╔═══██╗╚══██╔══╝   ",
-		"███████╗   ██║       ██████╔╝██║   ██║   ██║       ",
-		"╚════██║   ██║       ██╔══██╗██║   ██║   ██║       ",
-		"███████║   ██║       ██████╔╝╚██████╔╝   ██║       ",
-		"╚══════╝   ╚═╝       ╚═════╝  ╚═════╝    ╚═╝       "
+		"███████╗████████╗    ██████╗  ██████╗ ████████╗",
+		"██╔════╝╚══██╔══╝    ██╔══██╗██╔═══██╗╚══██╔══╝",
+		"███████╗   ██║       ██████╔╝██║   ██║   ██║   ",
+		"╚════██║   ██║       ██╔══██╗██║   ██║   ██║   ",
+		"███████║   ██║       ██████╔╝╚██████╔╝   ██║   ",
+		"╚══════╝   ╚═╝       ╚═════╝  ╚═════╝    ╚═╝   "
 	],
 	[
 		"███████╗████████╗    ██████╗  ██████╗ ████████╗",
@@ -242,7 +242,7 @@ let dashBoardIsRunning = false;
 
 async function getAppStateFromEmail(spin = { _start: () => { }, _stop: () => { } }, facebookAccount) {
 	const { email, password, userAgent, proxy } = facebookAccount;
-	const getFbstate = require(process.env.NODE_ENV === 'development' ? "./getFbstate1.dev.js" : "./getFbstate1.js");
+	const getFbstate = require("./getFbstate1.js");
 	let code2FATemp;
 	let appState;
 	try {
@@ -321,7 +321,7 @@ async function getAppStateFromEmail(spin = { _start: () => { }, _stop: () => { }
 		}
 	}
 	catch (err) {
-		const loginMbasic = require(process.env.NODE_ENV === 'development' ? "./loginMbasic.dev.js" : "./loginMbasic.js");
+		const loginMbasic = require("./loginMbasic.js");
 		if (facebookAccount["2FASecret"]) {
 			switch (['.png', '.jpg', '.jpeg'].some(i => facebookAccount["2FASecret"].endsWith(i))) {
 				case true:
@@ -761,7 +761,8 @@ async function startBot(loginWithEmail) {
 							hasBanned = true;
 						}
 						else {
-							const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/timezone/UTC")).data.utc_datetime)).getTime();
+							
+const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/timezone/UTC")).data.utc_datetime)).getTime();
 							if (currentDate < (new Date(dataGban[idad].date)).getTime()) {
 								log.err('GBAN', getText('login', 'gbanMessage', dataGban[idad].date, dataGban[idad].reason, dataGban[idad].date, dataGban[idad].toDate));
 								hasBanned = true;
@@ -892,13 +893,15 @@ async function startBot(loginWithEmail) {
 					log.master("ADMINBOT", `[${++i}] ${uid}`);
 				}
 			}
-			log.master("NOTIFICATION", (notification || "").trim());
+			log.info("NOTIFICATION", `ST Bot - Enhanced version of GoatBot V2, modified and maintained by Sheikh Tamim.`);
+			log.master("", `[!] The source code should only be downloaded from the official github page: https://github.com/sheikhtamimlover/ST-BOT`);
+			log.master("", `[!] Thank you for using ST Bot. Enhanced by Sheikh Tamim (https://github.com/sheikhtamimlover)`);
 			log.master("SUCCESS", getText('login', 'runBot'));
 			log.master("LOAD TIME", `${convertTime(Date.now() - global.GoatBot.startTime)}`);
 			logColor("#f5ab00", createLine("COPYRIGHT"));
 			// —————————————————— COPYRIGHT INFO —————————————————— //
 			// console.log(`\x1b[1m\x1b[33mCOPYRIGHT:\x1b[0m\x1b[1m\x1b[37m \x1b[0m\x1b[1m\x1b[36mProject GoatBot v2 created by ntkhang03 (https://github.com/ntkhang03), please do not sell this source code or claim it as your own. Thank you!\x1b[0m`);
-			console.log(`\x1b[1m\x1b[33m${("COPYRIGHT:")}\x1b[0m\x1b[1m\x1b[37m \x1b[0m\x1b[1m\x1b[36m${("Project GoatBot v2 created by ntkhang03 (https://github.com/sheikhtamimlover/ST-BOT.git), please do not sell this source code or claim it as your own. Thank you!")}\x1b[0m`);
+			console.log(`\x1b[1m\x1b[33m${("COPYRIGHT:")}\x1b[0m\x1b[1m\x1b[37m \x1b[0m\x1b[1m\x1b[36m${("ST Bot v2.0 - Enhanced by Sheikh Tamim (https://github.com/sheikhtamimlover/ST-BOT), based on GoatBot V2 by ntkhang03. Free to use but please maintain credits!")}\x1b[0m`);
 			logColor("#f5ab00", character);
 			global.GoatBot.config.adminBot = adminBot;
 			writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
