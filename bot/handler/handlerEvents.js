@@ -560,9 +560,6 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 		 +------------------------------------------------+
 		*/
 		async function onReaction() {
-			// Anti-React Feature
-			await handleAntiReact();
-
 			const { onReaction } = GoatBot;
 			const Reaction = onReaction.get(messageID);
 			if (!Reaction)
@@ -716,49 +713,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			// Your code here
 		}
 
-		/*
-		 +------------------------------------------------+
-		 |                  ANTI REACT                    |
-		 +------------------------------------------------+
-		*/
-		async function handleAntiReact() {
-			const { antiReact } = config;
-			if (!antiReact || !antiReact.enable)
-				return;
-
-			const { reaction, userID, messageID: reactMessageID, threadID } = event;
-			if (!reaction || !reactMessageID)
-				return;
-
-			// Check if reaction emoji is in the banned list
-			if (!antiReact.emojis.includes(reaction))
-				return;
-
-			// Check if only admin bot can trigger this
-			if (antiReact.onlyAdminBot && !config.adminBot.includes(userID))
-				return;
-
-			// Get message info to check if it was sent by the bot
-			try {
-				const messageInfo = await api.getMessage(threadID, reactMessageID);
-				const botID = api.getCurrentUserID();
-				
-				// Only proceed if the message was sent by the bot
-				if (messageInfo && messageInfo.senderID !== botID)
-					return;
-
-				// Skip getMessage and directly unsend if configured
-				if (reactMessageID && global.GoatBot.botID && antiReact.deleteMessage) {
-					await api.unsendMessage(reactMessageID);
-					log.info("ANTI REACT", `Successfully unsent bot message ${reactMessageID} due to ${reaction} reaction`);
-				}
-			} catch (err) {
-				// Only log if it's not the common Facebook API error about getMessage
-				if (!err.message?.includes('field_exception') && !err.message?.includes('Query error') && !err.message?.includes('Cannot retrieve message')) {
-					log.warn("ANTI REACT", `Failed to process anti-react for message ${reactMessageID}:`, err.message);
-				}
-			}
-		}
+		
 
 		/*
 		 +------------------------------------------------+

@@ -114,12 +114,18 @@
   },
   "antiReact": {
     "enable": true,
-    "emojis": [
-      "👍"
-    ],
-    "onlyAdminBot": false,
-    "deleteMessage": true,
-    "notes": "If enabled, bot will unsend BOT MESSAGES ONLY when someone reacts with specified emojis. This only works on messages sent by the bot, not user messages. Set onlyAdminBot to true if only bot admins can trigger this feature."
+    "reactByUnsend": {
+      "enable": true,
+      "emojis": [
+        "👍"
+      ]
+    },
+    "reactByRemove": {
+      "enable": true,
+      "emoji": "⚠"
+    },
+    "onlyAdminBot": true,
+    "notes": "If enabled, bot will unsend BOT MESSAGES when admins react with unsend emojis, and remove users when admins react with remove emoji. Only works for bot admins."
   },
   "hideNotiMessage": {
     "commandNotFound": false,

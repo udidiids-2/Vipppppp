@@ -6,9 +6,22 @@
  */
 
 const utils = require("../utils");
-// @NethWs3Dev
+// ST | Sheikh Tamim 
 
 function formatMessage(threadID, data) {
+  if (!data || !data.__typename) {
+    return {
+      type: "unknown",
+      threadID: threadID,
+      messageID: data && data.message_id ? data.message_id : null,
+      body: "",
+      attachments: [],
+      mentions: [],
+      timestamp: data && data.timestamp_precise ? data.timestamp_precise : Date.now(),
+      error: "Invalid message data structure"
+    };
+  }
+  
   switch (data.__typename) {
     case "ThreadNameMessage":
       return {
@@ -140,16 +153,16 @@ function formatMessage(threadID, data) {
       }
     case "UserMessage":
       return {
-        senderID: data.message_sender.id,
-        body: data.message.text,
+        senderID: data.message_sender ? data.message_sender.id : null,
+        body: data.message && data.message.text ? data.message.text : "",
         threadID: threadID,
         messageID: data.message_id,
-        reactions: data.message_reactions.map((r) => ({
-          [r.user.id]: r.reaction,
-        })),
+        reactions: data.message_reactions && Array.isArray(data.message_reactions) ? data.message_reactions.map((r) => ({
+          [r.user && r.user.id ? r.user.id : "unknown"]: r.reaction || "",
+        })) : [],
         attachments:
           data.blob_attachments && data.blob_attachments.length > 0
-            ? data.blob_attachments.length.map((att) => {
+            ? (data.blob_attachments || []).map((att) => {
                 let x;
                 try {
                   x = utils._formatAttachment(att);
@@ -165,48 +178,47 @@ function formatMessage(threadID, data) {
               ? [
                   {
                     type: "share",
-                    ID: data.extensible_attachment.legacy_attachment_id,
-                    url: data.extensible_attachment.story_attachment.url,
+                    ID: data.extensible_attachment.legacy_attachment_id || null,
+                    url: data.extensible_attachment.story_attachment ? data.extensible_attachment.story_attachment.url : null,
 
-                    title:
-                      data.extensible_attachment.story_attachment
-                        .title_with_entities.text,
-                    description:
-                      data.extensible_attachment.story_attachment.description
-                        .text,
-                    source: data.extensible_attachment.story_attachment.source,
+                    title: data.extensible_attachment.story_attachment && 
+                           data.extensible_attachment.story_attachment.title_with_entities ? 
+                           data.extensible_attachment.story_attachment.title_with_entities.text : "",
+                    description: data.extensible_attachment.story_attachment && 
+                                data.extensible_attachment.story_attachment.description ? 
+                                data.extensible_attachment.story_attachment.description.text : "",
+                    source: data.extensible_attachment.story_attachment ? data.extensible_attachment.story_attachment.source : null,
 
                     image: (
-                      (data.extensible_attachment.story_attachment.media || {})
+                      (data.extensible_attachment.story_attachment && data.extensible_attachment.story_attachment.media || {})
                         .image || {}
-                    ).uri,
+                    ).uri || null,
                     width: (
-                      (data.extensible_attachment.story_attachment.media || {})
+                      (data.extensible_attachment.story_attachment && data.extensible_attachment.story_attachment.media || {})
                         .image || {}
-                    ).width,
+                    ).width || null,
                     height: (
-                      (data.extensible_attachment.story_attachment.media || {})
+                      (data.extensible_attachment.story_attachment && data.extensible_attachment.story_attachment.media || {})
                         .image || {}
-                    ).height,
+                    ).height || null,
                     playable:
-                      (data.extensible_attachment.story_attachment.media || {})
+                      (data.extensible_attachment.story_attachment && data.extensible_attachment.story_attachment.media || {})
                         .is_playable || false,
                     duration:
-                      (data.extensible_attachment.story_attachment.media || {})
+                      (data.extensible_attachment.story_attachment && data.extensible_attachment.story_attachment.media || {})
                         .playable_duration_in_ms || 0,
 
-                    subattachments: data.extensible_attachment.subattachments,
-                    properties:
-                      data.extensible_attachment.story_attachment.properties,
+                    subattachments: data.extensible_attachment.subattachments || [],
+                    properties: data.extensible_attachment.story_attachment ? data.extensible_attachment.story_attachment.properties : {},
                   },
                 ]
               : [],
-        mentions: data.message.ranges.map((mention) => ({
-          [mention.entity.id]: data.message.text.substring(
-            mention.offset,
-            mention.offset + mention.length,
+        mentions: data.message && data.message.ranges && data.message.text ? data.message.ranges.map((mention) => ({
+          [mention.entity && mention.entity.id ? mention.entity.id : "unknown"]: data.message.text.substring(
+            mention.offset || 0,
+            (mention.offset || 0) + (mention.length || 0),
           ),
-        })),
+        })) : [],
         timestamp: data.timestamp_precise,
       };
     default:

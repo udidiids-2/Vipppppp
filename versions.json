@@ -8,5 +8,32 @@
 			"scripts/cmds/help.js": "new version",
 			".replit": "prb fix"
 		}
+	},
+	{
+		"version": "2.1.00",
+		"files": {
+			"bot/handler/handlerAction.js": "added the react by unsend function and user warning by remove",
+			"bot/handler/handlerEvents.js": "remove antireact wrong code",
+			"fb-chat-api/src/getMessage.js": "fix blob error and stable proper code",
+			"scripts/cmds/antiout.js": "added new command",
+			"scripts/cmds/calendar.js": "added new command",
+			"scripts/cmds/file.js": "added new command",
+			"scripts/cmds/flux.js": "added new command",
+            "scripts/cmds/fluxpro.js": "added new command",
+			"scripts/cmds/leave.js": "added new command",
+			"scripts/cmds/mix.js": "added new command",
+			"scripts/cmds/pending.js": "added new command",
+			"scripts/cmds/pfp.js": "added new command",
+			"scripts/cmds/prompt.js": "added new command",
+			"scripts/cmds/rate.js": "added new command",
+			"scripts/cmds/say.js": "added new command",
+			"scripts/cmds/sing.js": "added new command",
+			"scripts/cmds/spin.js": "added new command",
+			"scripts/cmds/status.js": "added new command",
+			"scripts/cmds/top.js": "added new command",
+			"scripts/cmds/ytb.js": "update to new version",
+			"config.json": "fix to antireact"
+		}
 	}
+
 ]
