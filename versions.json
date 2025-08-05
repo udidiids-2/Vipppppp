@@ -34,6 +34,13 @@
 			"scripts/cmds/ytb.js": "update to new version",
 			"config.json": "fix to antireact"
 		}
+	},
+	{
+		"version": "2.1.10",
+		"files": {
+			"scripts/cmds/help.js": "new version",
+			"scripts/cmds/shell.js": "added for owner"
+		}
 	}
 
 ]
