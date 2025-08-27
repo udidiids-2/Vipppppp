@@ -9,6 +9,14 @@
     "intervalGetNewCookie": 1440,
     "notes": "time the system automatically retrieves new cookies from email/password, unit is minute, if you set null, the system will not automatically retrieve new cookies, it saves you from having to manually change your cookie every time it expires. recommended set to 1440 (1day) or 4320 (3day).TO BE ABLE TO USE THIS FEATURE YOU NEED TO ENTER THE ACCOUNT PASSWORD ABOVE"
   },
+  "botAccountCookie": {
+    "enable": false,
+    "email": "",
+    "password": "",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15",
+    "autoUseWhenEmpty": true,
+    "notes": "Bot account cookie configuration. When enabled and account.txt is empty, bot will automatically fetch cookies from this account. Make sure the account is not locked/checkpointed. Don't change the userAgent and 2FA is not supported. If this fails, you'll need to login manually."
+  },
   "antiInbox": false,
   "language": "en",
   "notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
@@ -111,6 +119,19 @@
       "webhookUrl": "",
       "note": "Can send notifications to many webhookUrl, separate by comma or space, example: \"https://discord.com/api/webhooks/123456789/123456789 https://discord.com/api/webhooks/987654321/987654321\" (without backslash)"
     }
+  },
+  "botStartupNotification": {
+    "enable": false,
+    "sendToThreads": {
+      "enable": true,
+      "threadIds": []
+    },
+    "sendToAdmin": {
+      "enable": false,
+      "adminId": ""
+    },
+    "message": "🤖 Bot is now online and ready to serve!",
+    "notes": "Bot startup notification settings. sendToThreads.threadIds can contain multiple thread IDs, sendToAdmin.adminId should contain single admin ID for notifications.Duo to fca issue maybe sendtoadmin not work."
   },
   "antiReact": {
     "enable": true,

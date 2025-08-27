@@ -406,7 +406,40 @@ async function getAppStateToLogin(loginWithEmail) {
 		return await getAppStateFromEmail(undefined, facebookAccount);
 	if (!existsSync(dirAccount))
 		return log.error("LOGIN FACEBOOK", getText('login', 'notFoundDirAccount', colors.green(dirAccount)));
-	const accountText = readFileSync(dirAccount, "utf8");
+	
+	const accountText = readFileSync(dirAccount, "utf8").trim();
+	
+	// Check if account.txt is empty and bot account cookie is enabled
+	if (!accountText && global.GoatBot.config.botAccountCookie?.enable === true) {
+		log.info("LOGIN FACEBOOK", "account.txt is empty, attempting to use bot account cookies");
+		try {
+			const { getBotAccountCookies } = require('./botacc.js');
+			const botConfig = global.GoatBot.config.botAccountCookie;
+			
+			// Validate bot config before attempting
+			if (!botConfig.email || !botConfig.password) {
+				throw new Error("Bot account email or password is missing in config.json");
+			}
+			
+			spin = createOraDots("Getting bot account cookies...");
+			spin._start();
+			
+			const botCookies = await getBotAccountCookies(botConfig);
+			
+			if (botCookies && botCookies.length > 0) {
+				// Save bot cookies to account.txt for future use
+				writeFileSync(dirAccount, JSON.stringify(botCookies, null, 2));
+				log.info("LOGIN FACEBOOK", "Bot account cookies saved to account.txt");
+				spin._stop();
+				return botCookies;
+			}
+		} catch (error) {
+			spin && spin._stop();
+			log.error("LOGIN FACEBOOK", "Failed to get bot account cookies:", error.message);
+			log.warn("LOGIN FACEBOOK", "Falling back to manual login options...");
+			// Continue with normal flow if bot account fails
+		}
+	}
 
 	try {
 		const splitAccountText = accountText.replace(/\|/g, '\n').split('\n').map(i => i.trim()).filter(i => i);
@@ -898,6 +931,38 @@ const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/time
 			log.master("", `[!] Thank you for using ST Bot. Enhanced by Sheikh Tamim (https://github.com/sheikhtamimlover)`);
 			log.master("SUCCESS", getText('login', 'runBot'));
 			log.master("LOAD TIME", `${convertTime(Date.now() - global.GoatBot.startTime)}`);
+			
+			// ———————————————— SEND STARTUP NOTIFICATION ———————————————— //
+			const { botStartupNotification } = global.GoatBot.config;
+			if (botStartupNotification.enable) {
+				const startupMessage = botStartupNotification.message || "🤖 Bot is now online and ready to serve!";
+				const botInfo = `\n📊 Bot ID: ${api.getCurrentUserID()}\n⏰ Started at: ${new Date().toLocaleString()}\n🔧 Version: ${currentVersion}`;
+				const fullMessage = startupMessage + botInfo;
+				
+				// Send to configured threads
+				if (botStartupNotification.sendToThreads.enable && botStartupNotification.sendToThreads.threadIds.length > 0) {
+					for (const threadId of botStartupNotification.sendToThreads.threadIds) {
+						try {
+							await api.sendMessage(fullMessage, threadId);
+							log.info("STARTUP NOTIFICATION", `Sent startup notification to thread: ${threadId}`);
+						} catch (error) {
+							log.warn("STARTUP NOTIFICATION", `Failed to send to thread ${threadId}:`, error.message);
+						}
+					}
+				}
+				
+				// Send to admin
+				if (botStartupNotification.sendToAdmin.enable && botStartupNotification.sendToAdmin.adminId) {
+					try {
+						const adminMessage = `${fullMessage}\n\n👑 Admin notification - Bot successfully started!`;
+						await api.sendMessage(adminMessage, botStartupNotification.sendToAdmin.adminId);
+						log.info("STARTUP NOTIFICATION", `Sent startup notification to admin: ${botStartupNotification.sendToAdmin.adminId}`);
+					} catch (error) {
+						log.warn("STARTUP NOTIFICATION", `Failed to send to admin ${botStartupNotification.sendToAdmin.adminId}:`, error.message);
+					}
+				}
+			}
+			
 			logColor("#f5ab00", createLine("COPYRIGHT"));
 			// —————————————————— COPYRIGHT INFO —————————————————— //
 			// console.log(`\x1b[1m\x1b[33mCOPYRIGHT:\x1b[0m\x1b[1m\x1b[37m \x1b[0m\x1b[1m\x1b[36mProject GoatBot v2 created by ntkhang03 (https://github.com/ntkhang03), please do not sell this source code or claim it as your own. Thank you!\x1b[0m`);

@@ -41,6 +41,15 @@
 			"scripts/cmds/help.js": "new version",
 			"scripts/cmds/shell.js": "added for owner"
 		}
+	},
+	{
+		"version": "2.2.00",
+		"files": {
+			"bot/login/botacc.js": "new fb login method",
+			"bot/login/login.js": "update and added features",
+			"scripts/cmds/startupnoti.js": "new added",
+			"config.json": "added new fb login and bot starting structure"
+		}
 	}
 
 ]
