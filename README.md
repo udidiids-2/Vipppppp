@@ -1,4 +1,3 @@
-
 # 🐐 ST-BOT - By Sheikh Tamim
 
 A customized and powerful multi-purpose chatbot framework for Facebook Messenger, based on the original **GoatBot V2** by NTKhang. This version is tailored and improved by **Sheikh Tamim** with additional integrations, command structure enhancements, and admin tools.
@@ -28,7 +27,7 @@ A customized and powerful multi-purpose chatbot framework for Facebook Messenger
 ### 📞 Contact & Support
 
 - **Messenger Group**: [Join Support Group](https://m.me/j/AbYvFRTzENblDU94/)
-- **Instagram**: [@sheikh.tamim_lover](https://www.instagram.com/sheikh.tamim_lover/)
+- **Instagram**: [@sheikh.tamim_lover](https://www.instagram.com/sheikhtamim_lover/)
 - **Facebook**: [m.me/tormairedusi](https://m.me/tormairedusi)
 - **GitHub**: [sheikhtamimlover](https://github.com/sheikhtamimlover)
 
@@ -74,6 +73,120 @@ Before starting, make sure to configure:
 3. **Database**: Choose between SQLite (default) or MongoDB in `config.json`
 
 4. **Bot Settings**: Customize prefix, language, timezone in `config.json`
+
+---
+
+## ⭐ Special Features
+
+### 🔐 Thread Approval System
+Control which groups the bot can respond in with the thread approval system:
+
+```json
+"threadApproval": {
+  "enable": true,
+  "adminNotificationThreads": ["thread_id_1", "thread_id_2"],
+  "autoApproveExisting": true
+}
+```
+
+- **enable**: Turn on/off thread approval requirement
+- **adminNotificationThreads**: Array of thread IDs where admins receive approval notifications
+- **autoApproveExisting**: Automatically approve all existing threads when first enabled
+- **Usage**: Use `.thread` command to manage pending, approve, or reject threads
+- **Workflow**: Bot added to new group → Admin notification → Use `.thread` to approve/reject
+
+### 🚀 Bot Startup Notifications
+Get notified when your bot comes online:
+
+```json
+"botStartupNotification": {
+  "enable": false,
+  "sendToThreads": {
+    "enable": true,
+    "threadIds": ["thread_id_1", "thread_id_2"]
+  },
+  "sendToAdmin": {
+    "enable": false,
+    "adminId": "admin_user_id"
+  },
+  "message": "🤖 Bot is now online and ready to serve!"
+}
+```
+
+- **sendToThreads**: Send startup message to specific group chats
+- **sendToAdmin**: Send private message to bot admin
+- **Custom Message**: Customize the startup notification message
+
+### 🌐 Webview Dashboard Protection
+Secure your dashboard with password protection:
+
+```json
+"dashBoard": {
+  "enable": true,
+  "port": 3001,
+  "password": {
+    "enable": true,
+    "password": "your_secure_password"
+  }
+}
+```
+
+- **Dashboard Access**: Protected by password when enabled
+- **Secure Login**: Enter password to access bot management interface
+- **Real-time Monitoring**: Live statistics and bot control
+
+### ⚡ AntiReact System
+Advanced message management through reactions:
+
+```json
+"antiReact": {
+  "enable": true,
+  "reactByUnsend": {
+    "enable": true,
+    "emojis": ["👍"]
+  },
+  "reactByRemove": {
+    "enable": true,
+    "emoji": "⚠"
+  },
+  "onlyAdminBot": true
+}
+```
+
+- **reactByUnsend**: React with specified emojis to unsend bot messages
+- **reactByRemove**: React to remove users from group
+- **Admin Only**: Only bot admins can use reaction controls
+
+### 🆔 Bot Account Cookie System
+Automatic cookie management for bot account:
+
+```json
+"botAccountCookie": {
+  "enable": false,
+  "email": "bot_account_email",
+  "password": "bot_account_password",
+  "autoUseWhenEmpty": true
+}
+```
+
+- **Auto Login**: Automatically fetch cookies when account.txt is empty
+- **Backup System**: Falls back to manual login if auto-login fails
+- **No 2FA Support**: Use accounts without two-factor authentication
+
+### 📝 Bio Update System
+Automatically update bot's profile bio:
+
+```json
+"bioUpdate": {
+  "enable": false,
+  "bioText": "Your custom bio text",
+  "updateOnce": true
+}
+```
+
+- **Custom Bio**: Set personalized bio text
+- **One-time Update**: Option to update only once or on every restart
+- **Auto Management**: Handles bio updates seamlessly
 
 ---
 
@@ -174,18 +287,30 @@ The bot includes a real-time web dashboard accessible at `http://localhost:3001`
 
 ---
 
-## 🚀 Deployment on Render
+## 🚀 Deployment on Replit
 
-This bot is optimized for Render deployment:
+This bot is perfectly optimized for Replit deployment with zero configuration needed:
 
-1. **Fork** this repository to GitHub.
-2. **Create a new Web Service** on Render and connect your forked repository.
-3. **Set Build Command:** `npm install`
-4. **Set Start Command:** `npm start`
-5. **Deploy!** - Render will automatically build and deploy your bot.
-6. **Scaling:** Configure auto-scaling and other settings to manage server load as needed.
+### 🎯 One-Click Deployment
+1. **Fork/Import** this repository to Replit
+2. **Run** - Simply click the Run button, Replit handles everything automatically
+3. **Dashboard Access** - Your dashboard will be available at your Replit URL on port 3001
+4. **Always On** - Use Replit's Always On feature for 24/7 bot operation
 
-Render provides reliable hosting, automated deployments, and easy scaling for your bot.
+### 🔧 Replit-Optimized Features
+- **Auto-Installation** - Dependencies install automatically on first run
+- **Port Forwarding** - Dashboard automatically accessible via Replit's built-in port forwarding  
+- **Environment Variables** - Use Replit's Secrets for sensitive configuration
+- **File Persistence** - Database and configuration files persist across restarts
+- **Live Reload** - Code changes trigger automatic restarts
+
+### 🌐 Production Ready
+- **Built-in SSL** - HTTPS automatically provided by Replit
+- **Global CDN** - Fast worldwide access to your bot dashboard
+- **Monitoring** - Built-in performance monitoring and logging
+- **Scaling** - Automatic resource scaling based on usage
+
+Replit provides the most reliable and easiest deployment experience for ST-Bot with no complex configuration required.
 
 ---
 
