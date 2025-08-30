@@ -50,6 +50,22 @@
 			"scripts/cmds/startupnoti.js": "new added",
 			"config.json": "added new fb login and bot starting structure"
 		}
+	},
+	{
+		"version": "2.3.0",
+		"files": {
+			"bot/handler/handlerEvents.js": "update to V2.3",
+			"bot/login/botacc.js": "fix issue",
+			"bot/login/login.js": "update to V2.3",
+			"dashboard/views/login.eta": "added new files",
+			"dashboard/app.js": "update to V2.3",
+			"database/models/mongodb/thread.js": "update to V2.3",
+			"database/models/sqlite/thread.js": "update to V2.3",
+			"scripts/cmds/imgur.js": "new added",
+			"scripts/cmds/threadapprove.js": "new added",
+			"scripts/events/welcome.js": "update to V2.3",
+			"config.json": "update to V2.3, added bio , threadapprove features"
+		}
 	}
 
 ]

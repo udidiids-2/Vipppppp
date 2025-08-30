@@ -17,6 +17,12 @@
     "autoUseWhenEmpty": true,
     "notes": "Bot account cookie configuration. When enabled and account.txt is empty, bot will automatically fetch cookies from this account. Make sure the account is not locked/checkpointed. Don't change the userAgent and 2FA is not supported. If this fails, you'll need to login manually."
   },
+  "bioUpdate": {
+    "enable": false,
+    "bioText": "",
+    "updateOnce": true,
+    "notes": "Bio update system. When enabled, bot will update user bio on startup. If updateOnce is true, bio will only be updated once and not on every restart. Leave bioText empty to disable."
+  },
   "antiInbox": false,
   "language": "en",
   "notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
@@ -64,7 +70,12 @@
   "dashBoard": {
     "enable": true,
     "expireVerifyCode": 300000,
-    "port": 3001
+    "port": 3001,
+    "password": {
+      "enable": false,
+      "password": "",
+      "notes": "Dashboard password protection. When enabled, users need to enter the password to access the dashboard. Leave password empty to disable protection."
+    }
   },
   "serverUptime": {
     "enable": false,
@@ -132,6 +143,14 @@
     },
     "message": "🤖 Bot is now online and ready to serve!",
     "notes": "Bot startup notification settings. sendToThreads.threadIds can contain multiple thread IDs, sendToAdmin.adminId should contain single admin ID for notifications.Duo to fca issue maybe sendtoadmin not work."
+  },
+  "threadApproval": {
+    "enable": false,
+    "adminNotificationThreads": [],
+    "autoApproveExisting": true,
+    "sendNotifications": true,
+    "sendThreadMessage": true,
+    "notes": "Thread approval system. When enabled, bot will only respond in approved threads. adminNotificationThreads: array of thread IDs where approval notifications will be sent. autoApproveExisting: if true, all existing threas will be automatically approved when this feature is first enabled. sendNotifications: if false, no admin notifications sent. sendThreadMessage: if false, no message sent to new thread."
   },
   "antiReact": {
     "enable": true,

@@ -406,26 +406,26 @@ async function getAppStateToLogin(loginWithEmail) {
 		return await getAppStateFromEmail(undefined, facebookAccount);
 	if (!existsSync(dirAccount))
 		return log.error("LOGIN FACEBOOK", getText('login', 'notFoundDirAccount', colors.green(dirAccount)));
-	
+
 	const accountText = readFileSync(dirAccount, "utf8").trim();
-	
+
 	// Check if account.txt is empty and bot account cookie is enabled
 	if (!accountText && global.GoatBot.config.botAccountCookie?.enable === true) {
 		log.info("LOGIN FACEBOOK", "account.txt is empty, attempting to use bot account cookies");
 		try {
 			const { getBotAccountCookies } = require('./botacc.js');
 			const botConfig = global.GoatBot.config.botAccountCookie;
-			
+
 			// Validate bot config before attempting
 			if (!botConfig.email || !botConfig.password) {
 				throw new Error("Bot account email or password is missing in config.json");
 			}
-			
+
 			spin = createOraDots("Getting bot account cookies...");
 			spin._start();
-			
+
 			const botCookies = await getBotAccountCookies(botConfig);
-			
+
 			if (botCookies && botCookies.length > 0) {
 				// Save bot cookies to account.txt for future use
 				writeFileSync(dirAccount, JSON.stringify(botCookies, null, 2));
@@ -763,6 +763,36 @@ async function startBot(loginWithEmail) {
 			log.info("PREFIX", global.GoatBot.config.prefix);
 			log.info("LANGUAGE", global.GoatBot.config.language);
 			log.info("BOT NICK NAME", global.GoatBot.config.nickNameBot || "GOAT BOT");
+			
+			// ———————————————————— BIO UPDATE ————————————————————— //
+			const { bioUpdate } = global.GoatBot.config;
+			if (bioUpdate && bioUpdate.enable === true && bioUpdate.bioText) {
+				try {
+					// Check if bio should be updated only once
+					if (bioUpdate.updateOnce === true) {
+						// Check if bio has already been updated (stored in global data)
+						const globalData = require('../../database/controller/globalData.js');
+						const bioUpdateStatus = await globalData.get('bioUpdateStatus', 'hasUpdatedBio', false);
+						
+						if (!bioUpdateStatus) {
+							log.info("BIO UPDATE", "Updating bot bio for the first time...");
+							await api.changeBio(bioUpdate.bioText, false);
+							await globalData.set('bioUpdateStatus', 'hasUpdatedBio', true);
+							log.info("BIO UPDATE", `✅ Bio updated successfully: "${bioUpdate.bioText}"`);
+						} else {
+							log.info("BIO UPDATE", "Bio already updated once, skipping...");
+						}
+					} else {
+						// Update bio every time bot starts
+						log.info("BIO UPDATE", "Updating bot bio...");
+						await api.changeBio(bioUpdate.bioText, false);
+						log.info("BIO UPDATE", `✅ Bio updated successfully: "${bioUpdate.bioText}"`);
+					}
+				} catch (error) {
+					log.error("BIO UPDATE", "Failed to update bio:", error.message);
+				}
+			}
+
 			// ———————————————————— GBAN ————————————————————— //
 			let dataGban;
 
@@ -794,7 +824,7 @@ async function startBot(loginWithEmail) {
 							hasBanned = true;
 						}
 						else {
-							
+
 const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/timezone/UTC")).data.utc_datetime)).getTime();
 							if (currentDate < (new Date(dataGban[idad].date)).getTime()) {
 								log.err('GBAN', getText('login', 'gbanMessage', dataGban[idad].date, dataGban[idad].reason, dataGban[idad].date, dataGban[idad].toDate));
@@ -838,6 +868,33 @@ const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/time
 			}
 			// ——————————————————— LOAD DATA ——————————————————— //
 			const { threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, sequelize } = await require(process.env.NODE_ENV === 'development' ? "./loadData.dev.js" : "./loadData.js")(api, createLine);
+			
+			// ———————————————————— BIO UPDATE ————————————————————— //
+			if (bioUpdate && bioUpdate.enable === true && bioUpdate.bioText) {
+				try {
+					// Check if bio should be updated only once
+					if (bioUpdate.updateOnce === true) {
+						// Check if bio has already been updated
+						const bioUpdateStatus = await globalData.get('bioUpdateStatus', 'hasUpdatedBio', false);
+						
+						if (!bioUpdateStatus) {
+							log.info("BIO UPDATE", "Updating bot bio for the first time...");
+							await api.changeBio(bioUpdate.bioText, false);
+							await globalData.set('bioUpdateStatus', 'hasUpdatedBio', true);
+							log.info("BIO UPDATE", `✅ Bio updated successfully: "${bioUpdate.bioText}"`);
+						} else {
+							log.info("BIO UPDATE", "Bio already updated once, skipping...");
+						}
+					} else {
+						// Update bio every time bot starts
+						log.info("BIO UPDATE", "Updating bot bio...");
+						await api.changeBio(bioUpdate.bioText, false);
+						log.info("BIO UPDATE", `✅ Bio updated successfully: "${bioUpdate.bioText}"`);
+					}
+				} catch (error) {
+					log.error("BIO UPDATE", "Failed to update bio:", error.message);
+				}
+			}
 			// ————————————————— CUSTOM SCRIPTS ————————————————— //
 			await require("../custom.js")({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getText });
 			// —————————————————— LOAD SCRIPTS —————————————————— //
@@ -931,14 +988,14 @@ const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/time
 			log.master("", `[!] Thank you for using ST Bot. Enhanced by Sheikh Tamim (https://github.com/sheikhtamimlover)`);
 			log.master("SUCCESS", getText('login', 'runBot'));
 			log.master("LOAD TIME", `${convertTime(Date.now() - global.GoatBot.startTime)}`);
-			
-			// ———————————————— SEND STARTUP NOTIFICATION ———————————————— //
+
+			// ——————————————————— SEND STARTUP NOTIFICATION ———————————————————— //
 			const { botStartupNotification } = global.GoatBot.config;
 			if (botStartupNotification.enable) {
 				const startupMessage = botStartupNotification.message || "🤖 Bot is now online and ready to serve!";
 				const botInfo = `\n📊 Bot ID: ${api.getCurrentUserID()}\n⏰ Started at: ${new Date().toLocaleString()}\n🔧 Version: ${currentVersion}`;
 				const fullMessage = startupMessage + botInfo;
-				
+
 				// Send to configured threads
 				if (botStartupNotification.sendToThreads.enable && botStartupNotification.sendToThreads.threadIds.length > 0) {
 					for (const threadId of botStartupNotification.sendToThreads.threadIds) {
@@ -950,7 +1007,7 @@ const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/time
 						}
 					}
 				}
-				
+
 				// Send to admin
 				if (botStartupNotification.sendToAdmin.enable && botStartupNotification.sendToAdmin.adminId) {
 					try {
@@ -962,7 +1019,7 @@ const currentDate = (new Date((await axios.get("http://worldtimeapi.org/api/time
 					}
 				}
 			}
-			
+
 			logColor("#f5ab00", createLine("COPYRIGHT"));
 			// —————————————————— COPYRIGHT INFO —————————————————— //
 			// console.log(`\x1b[1m\x1b[33mCOPYRIGHT:\x1b[0m\x1b[1m\x1b[37m \x1b[0m\x1b[1m\x1b[36mProject GoatBot v2 created by ntkhang03 (https://github.com/ntkhang03), please do not sell this source code or claim it as your own. Thank you!\x1b[0m`);

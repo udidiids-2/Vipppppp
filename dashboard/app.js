@@ -19,6 +19,15 @@ module.exports = async (api) => {
 	app.engine("eta", eta.renderFile);
 	app.set("view engine", "eta");
 
+	// Session middleware for password authentication
+	const session = require('express-session');
+	app.use(session({
+		secret: 'dashboard-session-' + Date.now(),
+		resave: false,
+		saveUninitialized: false,
+		cookie: { maxAge: 24 * 60 * 60 * 1000 } // 24 hours
+	}));
+
 	app.use(bodyParser.json());
 	app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -29,11 +38,35 @@ module.exports = async (api) => {
 
 	// Simple authentication middleware
 	const isAuthenticated = (req, res, next) => {
+		// Check if dashboard password protection is enabled
+		if (config.dashBoard?.password?.enable === true && config.dashBoard?.password?.password) {
+			const sessionPassword = req.session?.dashboardAuth;
+			const configPassword = config.dashBoard.password.password;
+			
+			if (sessionPassword !== configPassword) {
+				return res.render("login", {
+					error: req.query.error === "1" ? "Invalid password" : null
+				});
+			}
+		}
 		next();
 	};
 
+	// Login route for password authentication
+	app.post("/login", (req, res) => {
+		const { password } = req.body;
+		const configPassword = config.dashBoard?.password?.password;
+		
+		if (password === configPassword) {
+			req.session.dashboardAuth = password;
+			res.redirect("/");
+		} else {
+			res.redirect("/?error=1");
+		}
+	});
+
 	// Main dashboard route
-	app.get("/", async (req, res) => {
+	app.get("/", isAuthenticated, async (req, res) => {
 		try {
 			// Get real-time data safely
 			const totalUsers = global.db?.allUserData?.length || 0;
@@ -89,7 +122,7 @@ module.exports = async (api) => {
 
 	// API routes
 	const apiRouter = require("./routes/api")({ isAuthenticated });
-	app.use("/api", apiRouter);
+	app.use("/api", isAuthenticated, apiRouter);
 
 	// Health check endpoint
 	app.get("/uptime", (req, res) => {

@@ -45,7 +45,91 @@ module.exports = {
 				if (dataAddedParticipants.some((item) => item.userFbId == api.getCurrentUserID())) {
 					if (nickNameBot)
 						api.changeNickname(nickNameBot, threadID, api.getCurrentUserID());
-					return message.send(getLang("welcomeMessage", prefix));
+					
+					// Check if thread approval system is enabled
+					const { threadApproval } = global.GoatBot.config;
+					if (threadApproval && threadApproval.enable) {
+						try {
+							let threadData = await threadsData.get(threadID);
+							
+							// Always set new threads as unapproved
+							await threadsData.set(threadID, { approved: false });
+							
+							// Send notification to admin notification threads only (not to admin IDs)
+							if (threadApproval.adminNotificationThreads && threadApproval.adminNotificationThreads.length > 0 && threadApproval.sendNotifications !== false) {
+								// Use setTimeout to avoid immediate API conflicts
+								setTimeout(async () => {
+									try {
+										// Get thread info safely with retries
+										let threadInfo;
+										let addedByUser;
+										
+										try {
+											threadInfo = await api.getThreadInfo(threadID);
+										} catch (err) {
+											console.error(`Failed to get thread info for ${threadID}:`, err.message);
+											threadInfo = { threadName: "Unknown", participantIDs: [] };
+										}
+										
+										try {
+											addedByUser = await api.getUserInfo(event.author);
+										} catch (err) {
+											console.error(`Failed to get user info for ${event.author}:`, err.message);
+											addedByUser = { [event.author]: { name: "Unknown" } };
+										}
+										
+										const notificationMessage = `🔔 BOT ADDED TO NEW THREAD 🔔\n\n` +
+											`📋 Thread Name: ${threadInfo.threadName || "Unknown"}\n` +
+											`🆔 Thread ID: ${threadID}\n` +
+											`👤 Added by: ${addedByUser[event.author]?.name || "Unknown"}\n` +
+											`👥 Members: ${threadInfo.participantIDs?.length || 0}\n` +
+											`⏰ Time: ${new Date().toLocaleString()}\n\n` +
+											`⚠️ This thread is NOT APPROVED. Bot will not respond to any commands.\n` +
+											`Use "${prefix}mthread" to manage thread approvals.`;
+										
+										// Send notifications with proper error handling
+										for (const notifyThreadID of threadApproval.adminNotificationThreads) {
+											try {
+												await message.send(notificationMessage, notifyThreadID);
+											} catch (err) {
+												console.error(`Failed to send notification to thread ${notifyThreadID}:`, err.message);
+											}
+										}
+									} catch (err) {
+										console.error(`Failed to send notifications:`, err.message);
+									}
+								}, 3000); // 3 second delay to avoid API conflicts
+							}
+							
+							// Send warning message to the new thread if enabled
+							if (threadApproval.sendThreadMessage !== false) {
+								// Use setTimeout to avoid immediate API conflicts after bot addition
+								setTimeout(async () => {
+									try {
+										const warningMessage = `⚠️ This thread is not approved yet. Bot will not respond to any commands until approved by an admin.\n\nUse "${prefix}help" after approval to see available commands.`;
+										await message.send(warningMessage);
+									} catch (err) {
+										console.error(`Failed to send approval message to thread ${threadID}:`, err.message);
+									}
+								}, 5000); // 5 second delay for thread message
+							}
+							
+							return null; // Don't send welcome message for unapproved threads
+						} catch (err) {
+							console.error(`Thread approval system error:`, err.message);
+							// Continue with normal welcome if approval system fails
+						}
+					}
+					
+					// Use setTimeout to avoid immediate API conflicts
+					setTimeout(async () => {
+						try {
+							await message.send(getLang("welcomeMessage", prefix));
+						} catch (err) {
+							console.error(`Failed to send welcome message to thread ${threadID}:`, err.message);
+						}
+					}, 2000);
+					return null;
 				}
 				// if new member:
 				if (!global.temp.welcomeEvent[threadID])

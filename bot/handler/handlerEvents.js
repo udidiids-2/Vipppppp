@@ -146,14 +146,43 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 		const { config, configCommands: { envGlobal, envCommands, envEvents } } = GoatBot;
 		const { autoRefreshThreadInfoFirstTime } = config.database;
 		let { hideNotiMessage = {} } = config;
+		const { body } = event;
 
-		const { body, messageID, threadID, isGroup } = event;
+		const { senderID, threadID, messageID, isGroup, isReply, isEdit, isFirst, botID, bot } = event;
+		const { threadApproval } = config;
+
+		// STRICT THREAD APPROVAL CHECK - Block ALL bot activity for unapproved threads
+		if (threadApproval && threadApproval.enable && threadID) {
+			try {
+				const threadData = await threadsData.get(threadID);
+				const isAdminBot = config.adminBot.includes(senderID);
+
+				// If thread approval status is not explicitly true, block everything
+				if (threadData.approved !== true) {
+					// Only allow admin thread management commands in unapproved threads
+					if (isAdminBot && event.body && event.body.startsWith(utils.getPrefix(threadID))) {
+						const commandName = event.body.split(' ')[0].slice(utils.getPrefix(threadID).length).toLowerCase();
+						const allowedCommands = ['mthread', 'threadapprove', 'approvethread', 'tapprove', 'threadreject', 'rejectthread', 'treject'];
+
+						if (allowedCommands.includes(commandName)) {
+							// Allow this command to proceed
+						} else {
+							return null; // Block all other commands
+						}
+					} else {
+						return null; // Block all non-admin activity and non-command messages
+					}
+				}
+			} catch (err) {
+				console.error(`Thread approval check failed for ${threadID}:`, err.message);
+				// If we can't check approval status, allow to proceed to avoid blocking everything
+			}
+		}
+
 
 		// Check if has threadID
 		if (!threadID)
 			return;
-
-		const senderID = event.userID || event.senderID || event.author;
 
 		let threadData = global.db.allThreadData.find(t => t.threadID == threadID);
 		let userData = global.db.allUserData.find(u => u.userID == senderID);
@@ -181,12 +210,12 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			hideNotiMessage = threadData.settings.hideNotiMessage;
 
 		const prefix = getPrefix(threadID);
-		const role = getRole(threadData, senderID);
+		const userRole = getRole(threadData, senderID);
 		const parameters = {
 			api, usersData, threadsData, message, event,
 			userModel, threadModel, prefix, dashBoardModel,
 			globalModel, dashBoardData, globalData, envCommands,
-			envEvents, envGlobal, role,
+			envEvents, envGlobal, userRole,
 			removeCommandNameFromBody: function removeCommandNameFromBody(body_, prefix_, commandName_) {
 				if ([body_, prefix_, commandName_].every(x => nullAndUndefined.includes(x)))
 					throw new Error("Please provide body, prefix and commandName to use this function, this function without parameters only support for onStart");
@@ -263,7 +292,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			const roleConfig = getRoleConfig(utils, command, isGroup, threadData, commandName);
 			const needRole = roleConfig.onStart;
 
-			if (needRole > role) {
+			if (needRole > userRole) {
 				if (!hideNotiMessage.needRoleToUseCmd) {
 					if (needRole == 1)
 						return await message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "onlyAdmin", commandName));
@@ -336,7 +365,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 				// —————————————— CHECK PERMISSION —————————————— //
 				const roleConfig = getRoleConfig(utils, command, isGroup, threadData, commandName);
 				const needRole = roleConfig.onChat;
-				if (needRole > role)
+				if (needRole > userRole)
 					continue;
 
 				const getText2 = createGetText2(langCode, `${process.cwd()}/languages/cmds/${langCode}.js`, prefix, command);
@@ -490,7 +519,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 		}
 
 
-		/* 
+		/*
 		 +------------------------------------------------+
 		 |                    ON REPLY                    |
 		 +------------------------------------------------+
@@ -517,7 +546,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			// —————————————— CHECK PERMISSION —————————————— //
 			const roleConfig = getRoleConfig(utils, command, isGroup, threadData, commandName);
 			const needRole = roleConfig.onReply;
-			if (needRole > role) {
+			if (needRole > userRole) {
 				if (!hideNotiMessage.needRoleToUseCmdOnReply) {
 					if (needRole == 1)
 						return await message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "onlyAdminToUseOnReply", commandName));
@@ -579,7 +608,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			// —————————————— CHECK PERMISSION —————————————— //
 			const roleConfig = getRoleConfig(utils, command, isGroup, threadData, commandName);
 			const needRole = roleConfig.onReaction;
-			if (needRole > role) {
+			if (needRole > userRole) {
 				if (!hideNotiMessage.needRoleToUseCmdOnReaction) {
 					if (needRole == 1)
 						return await message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "onlyAdminToUseOnReaction", commandName));
@@ -619,7 +648,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 
 		/*
 		 +------------------------------------------------+
-		 |                 EVENT COMMAND                  |
+		 |                  EVENT COMMAND                  |
 		 +------------------------------------------------+
 		*/
 		async function handlerEvent() {
@@ -640,7 +669,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 					});
 					if (typeof handler == "function") {
 						await handler();
-						log.info("EVENT COMMAND", `Event: ${commandName} | ${author} | ${userData.name} | ${threadID}`);
+						log.info("EVENT COMMAND", `Event: ${commandName} | ${author} | ${userData?.name || 'Unknown'} | ${threadID}`);
 					}
 				}
 				catch (err) {
@@ -690,7 +719,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 						if (typeof handler == "function") {
 							try {
 								await handler();
-								log.info("onEvent", `${commandName} | ${author} | ${userData.name} | ${threadID}`);
+								log.info("onEvent", `${commandName} | ${author} | ${userData?.name || 'Unknown'} | ${threadID}`);
 							}
 							catch (err) {
 								message.reply(utils.getText({ lang: langCode, head: "handlerEvents" }, "errorOccurred6", time, commandName, removeHomeDir(err.stack ? err.stack.split("\n").slice(0, 5).join("\n") : JSON.stringify(err, null, 2))));
@@ -713,7 +742,7 @@ module.exports = function (api, threadModel, userModel, dashBoardModel, globalMo
 			// Your code here
 		}
 
-		
+
 
 		/*
 		 +------------------------------------------------+

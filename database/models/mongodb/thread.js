@@ -31,7 +31,11 @@ const threadModel = new Schema({
 		type: Object,
 		default: {}
 	},
-	isGroup: Boolean
+	isGroup: Boolean,
+	approved: {
+		type: Boolean,
+		default: true
+	}
 }, {
 	timestamps: true,
 	minimize: false
