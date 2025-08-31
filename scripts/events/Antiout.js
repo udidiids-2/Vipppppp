@@ -6,7 +6,7 @@ module.exports.config = {
  description: "Listen events"
 };
 
-module.exports.run = async({ event, api, Threads, Users }) => {
+onEvent: async function ({ event, api, Threads, Users }) => {
  let data = (await Threads.getData(event.threadID)).data || {};
  if (data.antiout == false) return;
  if (event.logMessageData.leftParticipantFbId == api.getCurrentUserID()) return;
