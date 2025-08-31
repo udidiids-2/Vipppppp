@@ -9,6 +9,7 @@ module.exports = {
     author: "Modified by Rahat",
     countDown: 5,
     role: 0,
+    category: "fun", // ✅ এই লাইন না থাকায় Error আসছিলো
     description: "Chat with bot and show owner info"
   },
 
@@ -57,7 +58,7 @@ module.exports = {
       const body = event.body ? event.body.toLowerCase() : "";
       if (body.startsWith("baby") || body.startsWith("bby") || body.startsWith("bot") || body.startsWith("jan") || body.startsWith("babu") || body.startsWith("janu")) {
         const arr = body.replace(/^\S+\s*/, "");
-        const randomReplies = ["হুম?", "বল?", "জানি না!", "আচ্ছা..."]; // চাইলে লিস্ট বড় করো
+        const randomReplies = ["হুম?", "বল?", "জানি না!", "আচ্ছা..."];
         const a = arr ?
           (await axios.get(`${await baseApiUrl()}/baby?text=${encodeURIComponent(arr)}&senderID=${event.senderID}`)).data.reply
           : randomReplies[Math.floor(Math.random() * randomReplies.length)];
