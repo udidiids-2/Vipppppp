@@ -1,54 +1,48 @@
 module.exports = {
   config: {
     name: "antiout",
-    version: "1.0",
+    version: "2.0",
     author: "Chitron Bhattacharjee",
     countDown: 5,
-    role: 1, // Only admin can use this command (কমান্ড দিলে শুধু স্ট্যাটাস জানাবে)
-    shortDescription: { en: "Prevent members from leaving the group" },
-    longDescription: { en: "Always active anti-out feature that automatically adds back members who leave the group" },
-    category: "admin",
-    guide: { en: "{pn} - Anti-out is always enabled" },
-
-    // 👉 এটাকেই মিস করছিলে: এইটা ছাড়া onEvent ফায়ার হবে না
-    eventType: ["log:unsubscribe"]
+    role: 0, // সাধারণ ইউজার দিলেও কিছু হবে না, গ্লোবালি কাজ করবে
+    shortDescription: { en: "Global anti-out system" },
+    longDescription: { en: "Always active anti-out feature for all groups, no command needed" },
+    category: "system",
+    guide: { en: "This feature is always ON. No command required." },
+    eventType: ["log:unsubscribe"] // onEvent ট্রিগারের জন্য জরুরি
   },
 
   langs: {
     en: {
       missingPermission:
-        "❌ Sorry boss! I couldn't add the user back.\nUser %1 might have blocked me or doesn't have messenger option enabled.",
+        "❌ Couldn't add back %1.\nReason: %2",
       addedBack:
         "⚠️ Attention %1!\nThis group belongs to my boss!\nYou need admin clearance to leave this group!"
     }
   },
 
-  // কমান্ড দিলে শুধু জানাবে যে সবসময় অন আছে
-  onStart: async function ({ message }) {
-    message.reply("🛡️ Anti-out feature is always ON for this group.");
-  },
+  // 👉 এখানে onStart বাদ দিয়েছি, কারণ কমান্ড লাগবে না
+  onStart: async function () {},
 
-  // কেউ লিভ দিলেই আবার এড করবে
+  // কেউ লিভ দিলেই আবার এড করার চেষ্টা করবে
   onEvent: async function ({ event, api, usersData, getLang }) {
     if (event.logMessageType !== "log:unsubscribe") return;
 
     const leftUID = event.logMessageData?.leftParticipantFbId;
     if (!leftUID) return;
-
-    // বট নিজে লিভ দিলে কিছু করবে না
     if (leftUID === api.getCurrentUserID()) return;
 
     const name = await usersData.getName(leftUID).catch(() => "user");
-
-    // কিছু গ্রুপে ইনস্ট্যান্ট রি-অ্যাড ব্লক হয়—হালকা ডিলে রাখলাম
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    await sleep(1500);
 
     try {
       await api.addUserToGroup(leftUID, event.threadID);
       api.sendMessage(getLang("addedBack", name), event.threadID);
     } catch (e) {
-      api.sendMessage(getLang("missingPermission", name), event.threadID);
+      api.sendMessage(
+        getLang("missingPermission", name, e.error || e.message || "Unknown error"),
+        event.threadID
+      );
+      console.error("AntiOut Error:", e);
     }
   }
 };
