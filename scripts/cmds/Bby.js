@@ -5,11 +5,11 @@ const baseApiUrl = async () => "https://noobs-api.top/dipto";
 module.exports = {
   config: {
     name: "bby",
-    version: "2.0",
+    version: "2.1",
     author: "Modified by Rahat",
     countDown: 5,
     role: 0,
-    category: "fun", // ✅ এই লাইন না থাকায় Error আসছিলো
+    category: "fun", // ✅ category ঠিক আছে
     description: "Chat with bot and show owner info"
   },
 
@@ -19,8 +19,12 @@ module.exports = {
     if (cmd === "admin" || cmd === "info") {
       const time = new Date().toLocaleString("en-GB", { hour12: false });
 
-      const callback = () => {
-        api.sendMessage({
+      // Local image path ব্যবহার (Facebook URL বাদ)
+      const imagePath = __dirname + "/cache/owner.png";
+
+      // Image না থাকলে কোনো default message
+      const sendOwnerInfo = () => {
+        const msg = {
           body: `┏━━━━━━━━━━━━━━━┓
 ┃   🌟 𝗢𝗪𝗡𝗘𝗥 𝗜𝗡𝗙𝗢 🌟    
 ┣━━━━━━━━━━━━━━━┫
@@ -36,19 +40,16 @@ module.exports = {
 ┃🌐 𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤 : বায়ো-তে আছে
 ┣━━━━━━━━━━━━━━━┫
 ┃ 🕒 𝐔𝐩𝐝𝐚𝐭𝐞𝐝 𝐓𝐢𝐦𝐞:  ${time}
-┗━━━━━━━━━━━━━━━┛`,
-          attachment: fs.createReadStream(__dirname + "/cache/1.png")
-        }, event.threadID, () => fs.unlinkSync(__dirname + "/cache/1.png"));
+┗━━━━━━━━━━━━━━━┛`
+        };
+
+        // যদি ইমেজ আছে তাহলে attach করো
+        if (fs.existsSync(imagePath)) msg.attachment = fs.createReadStream(imagePath);
+
+        api.sendMessage(msg, event.threadID);
       };
 
-      // Profile picture download
-      axios({
-        method: "get",
-        url: "https://graph.facebook.com/61561511477968/picture?height=720&width=720&access_token=6628568379%7Cc1e620fa708a1d5696fb991c1bde5662",
-        responseType: "stream"
-      }).then(response => {
-        response.data.pipe(fs.createWriteStream(__dirname + '/cache/1.png')).on('close', callback);
-      });
+      sendOwnerInfo();
     }
   },
 
