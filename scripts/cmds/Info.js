@@ -5,7 +5,7 @@ const request = require("request");
 
 module.exports = {
   config: {
-    name: "admin",
+    name: "intro",
     aliases: ["inf", "in4"],
     version: "1.0",
     author: "Rahat",
