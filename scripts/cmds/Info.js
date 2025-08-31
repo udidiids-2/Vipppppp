@@ -1,11 +1,11 @@
 module.exports.config = {
-    name: "admin",
+    name: "Info",
     version: "2.0",
     permission: 0,
     author: "ST | Sheikh Tamim",
     prefix: true,
     description: "",
-    category: "admin",
+    category: "Rahat",
     usages: "",
     cooldowns: 5,
     dependencies: 
@@ -15,7 +15,6 @@ module.exports.config = {
     "axios":""
   }
 };
-
 
 module.exports.run = async function({ api,event,args,client,Users,Threads,__GLOBAL,Currencies }) {
 const axios = global.nodemodule["axios"];
