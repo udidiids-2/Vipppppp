@@ -1,20 +1,16 @@
-module.exports.config = {
-    name: "Info",
-    version: "2.0",
-    permission: 0,
-    author: "ST | Sheikh Tamim",
-    prefix: true,
-    description: "",
-    category: "Rahat",
-    usages: "",
-    cooldowns: 5,
-    dependencies: 
-	{
-    "request":"",
-    "fs-extra":"",
-    "axios":""
-  }
-};
+module.exports = {
+    config: {
+        name: "info",
+        aliases: ["Info", "admin"],
+        version: "1.0.0",
+        author: "Sheikh Tamim",
+        countDown: 3,
+        role: 0,
+        description: "admin info user",
+        category: "Rahat",
+        guide: "{pn} [name] - Greet someone or everyone"
+    },
+
 
 module.exports.run = async function({ api,event,args,client,Users,Threads,__GLOBAL,Currencies }) {
 const axios = global.nodemodule["axios"];
