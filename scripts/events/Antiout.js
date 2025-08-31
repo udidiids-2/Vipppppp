@@ -1,22 +1,49 @@
-module.exports.config = {
- name: "antiout",
- eventType: ["log:unsubscribe"],
- version: "1.0",
- credits: "Chitron Bhattacharjee",
- description: "Listen events"
-};
+module.exports = {
+  config: {
+    name: "antiout",
+    version: "1.0",
+    author: "Chitron Bhattacharjee",
+    countDown: 5,
+    role: 1,
+    shortDescription: {
+      en: "Prevent members from leaving the group"
+    },
+    longDescription: {
+      en: "Always active anti-out feature that automatically adds back members who leave the group"
+    },
+    category: "admin",
+    guide: {
+      en: "{pn} - Anti-out is always enabled"
+    }
+  },
 
-onEvent: async function ({ event, api, Threads, Users }) => {
- let data = (await Threads.getData(event.threadID)).data || {};
- if (data.antiout == false) return;
- if (event.logMessageData.leftParticipantFbId == api.getCurrentUserID()) return;
- const name = global.data.userName.get(event.logMessageData.leftParticipantFbId) || await Users.getNameUser(event.logMessageData.leftParticipantFbId);
- const type = (event.author == event.logMessageData.leftParticipantFbId) ? "self-separation" : "being kicked by the administrator na pasikat";
- if (type == "self-separation") {
-  api.addUserToGroup(event.logMessageData.leftParticipantFbId, event.threadID, (error, info) => {
-   if (error) {
-    api.sendMessage(`Unable to re-add members ${name} to the group\n\n${name} blocked me or There is no Message option in the profile `, event.threadID)
-   } else api.sendMessage(`${name} 𝘀𝘁𝘂𝗽𝗶𝗱 𝘆𝗼𝘂 𝗵𝗮𝘃𝗲 𝗻𝗼 𝗲𝘀𝗰𝗮𝗽𝗲 𝗳𝗿𝗼𝗺 𝗵𝗲𝗿𝗲`, event.threadID);
-  })
- }
-}
+  langs: {
+    en: {
+      missingPermission: "❌ Sorry boss! I couldn't add the user back.\nUser %1 might have blocked me or doesn't have messenger option enabled.",
+      addedBack: "⚠️ Attention %1!\nThis group belongs to my boss!\nYou need admin clearance to leave this group!"
+    }
+  },
+
+  // কমান্ড দিলে শুধু জানাবে যে সবসময় অন আছে
+  onStart: async function ({ message }) {
+    message.reply("🛡️ Anti-out feature is always ON for this group.");
+  },
+
+  // যখন কেউ লিভ দেবে তখনই আবার এড হবে
+  onEvent: async function ({ event, api, usersData, getLang }) {
+    if (event.logMessageType !== "log:unsubscribe") return;
+
+    // বট নিজে লিভ দিলে এড করবে না
+    if (event.logMessageData.leftParticipantFbId === api.getCurrentUserID()) return;
+
+    const uid = event.logMessageData.leftParticipantFbId;
+    const name = await usersData.getName(uid);
+
+    try {
+      await api.addUserToGroup(uid, event.threadID);
+      api.sendMessage(getLang("addedBack", name), event.threadID);
+    } catch (e) {
+      api.sendMessage(getLang("missingPermission", name), event.threadID);
+    }
+  }
+};
