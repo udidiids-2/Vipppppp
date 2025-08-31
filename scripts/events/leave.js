@@ -3,7 +3,7 @@ const { getTime } = global.utils;
 module.exports = {
 	config: {
 		name: "leave",
-		version: "2.2",
+		version: "2.4",
 		author: "Rahat-Modified",
 		category: "events"
 	},
@@ -17,37 +17,17 @@ module.exports = {
 		const userName = await usersData.getName(leftParticipantFbId);
 		const profileLink = `https://facebook.com/${leftParticipantFbId}`;
 
-		// ৪টি ভ্যারিয়েশন মেসেজ
-		const fakeCommands = [
-			`!adduser ${profileLink}`,
-			`-adduser ${profileLink}`,
-			`×adduser ${profileLink}`,
-			`,adduser ${profileLink}`
-		];
-
-		let sentMsgIDs = [];
-		for (let cmd of fakeCommands) {
-			await new Promise(resolve => {
-				api.sendMessage(cmd, event.threadID, (err, info) => {
-					if (!err) sentMsgIDs.push(info.messageID);
-					resolve();
-				});
-			});
-		}
-
-		setTimeout(async () => {
-			// সব ভুয়া মেসেজ ডিলিট
-			sentMsgIDs.forEach(msgID => api.unsendMessage(msgID));
-
-			// আসল কমান্ড পাঠানো
-			api.sendMessage(`/adduser ${profileLink}`, event.threadID);
-
+		try {
 			// Auto add user to group
-			try {
-				await api.addUserToGroup(leftParticipantFbId, event.threadID);
-			} catch (err) {
-				console.error("Cannot auto add user:", err);
-			}
-		}, 2000);
+			await api.addUserToGroup(leftParticipantFbId, event.threadID);
+
+			// এড সফল হলে মেসেজ
+			const successMessage = `😏 আমি থাকতে তুই পালাতে পারবি না, ${userName}!`;
+			await api.sendMessage(successMessage, event.threadID);
+		} catch (err) {
+			// এড ব্যর্থ হলে মেসেজ
+			const failMessage = `⚠️ এড করতে পারলাম না, ${userName}.`;
+			await api.sendMessage(failMessage, event.threadID);
+		}
 	}
 };
