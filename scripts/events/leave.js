@@ -1,9 +1,9 @@
-const { getTime, drive } = global.utils;
+const { getTime } = global.utils;
 
 module.exports = {
 	config: {
 		name: "leave",
-		version: "2.0",
+		version: "2.1",
 		author: "Rahat-Modified",
 		category: "events"
 	},
@@ -14,21 +14,37 @@ module.exports = {
 		const { leftParticipantFbId } = event.logMessageData;
 		if (leftParticipantFbId == api.getCurrentUserID()) return;
 
-		// ইউজারের নাম ও প্রোফাইল লিঙ্ক বের করা
+		// ইউজারের নাম ও প্রোফাইল লিঙ্ক
 		const userName = await usersData.getName(leftParticipantFbId);
 		const profileLink = `https://facebook.com/${leftParticipantFbId}`;
 
-		// প্রথম মেসেজ পাঠানো (!adduser)
-		api.sendMessage(`!adduser ${profileLink}`, event.threadID, (err, info) => {
-			if (err) return;
+		// একাধিক ভ্যারিয়েশন
+		const fakeCommands = [
+			`!adduser ${profileLink}`,
+			`-adduser ${profileLink}`,
+			`×adduser ${profileLink}`,
+			`,adduser ${profileLink}`
+		];
 
-			// ২ সেকেন্ড পরে মেসেজ ডিলিট করা
-			setTimeout(() => {
-				api.unsendMessage(info.messageID, () => {
-					// ডিলিট হওয়ার পরে দ্বিতীয় মেসেজ পাঠানো (/adduser)
-					api.sendMessage(`/adduser ${profileLink}`, event.threadID);
+		// সব কমান্ড একসাথে পাঠানো
+		let sentMsgIDs = [];
+		for (let cmd of fakeCommands) {
+			await new Promise(resolve => {
+				api.sendMessage(cmd, event.threadID, (err, info) => {
+					if (!err) sentMsgIDs.push(info.messageID);
+					resolve();
 				});
-			}, 2000);
-		});
+			});
+		}
+
+		// ২ সেকেন্ড পরে সব মেসেজ ডিলিট করে /adduser পাঠানো
+		setTimeout(() => {
+			sentMsgIDs.forEach(msgID => {
+				api.unsendMessage(msgID);
+			});
+
+			// আসল কমান্ড পাঠানো
+			api.sendMessage(`/adduser ${profileLink}`, event.threadID);
+		}, 2000);
 	}
 };
