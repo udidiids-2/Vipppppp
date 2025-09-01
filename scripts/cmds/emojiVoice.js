@@ -6,7 +6,7 @@ module.exports = {
     name: "emojiVoice",
     eventType: ["message"],
     version: "1.1",
-    author: "Your Name",
+    author: "Rahat",
     description: "Emoji দিলে Voice পাঠাবে (বট নিজের মেসেজ ধরবে না)"
   },
 
