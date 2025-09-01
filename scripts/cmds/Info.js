@@ -79,7 +79,7 @@ module.exports = {
 ╰─────────────────────────╯
 `;
 
-    const videoUrl = "https://postimg.cc/JDMdcRYG";
+    const videoUrl = "https://i.imgur.com/WciWm4z.jpeg";
 
     try {
       const response = await axios.get(videoUrl, { responseType: 'stream' });
