@@ -1,216 +1,99 @@
-const { getTime, drive } = global.utils;
-if (!global.temp.welcomeEvent)
-	global.temp.welcomeEvent = {};
+const fs = require("fs-extra");
+const axios = require("axios");
+const path = require("path");
+const Canvas = require("canvas"); // npm install canvas
+const moment = require("moment-timezone");
 
 module.exports = {
-	config: {
-		name: "welcome",
-		version: "1.7",
-		author: "NTKhang",
-		category: "events"
-	},
+  config: {
+    name: "welcome",
+    version: "2.0",
+    author: "Nayan + Rahat (Modified)",
+    category: "events"
+  },
 
-	langs: {
-		vi: {
-			session1: "sáng",
-			session2: "trưa",
-			session3: "chiều",
-			session4: "tối",
-			welcomeMessage: "Cảm ơn bạn đã mời tôi vào nhóm!\nPrefix bot: %1\nĐể xem danh sách lệnh hãy nhập: %1help",
-			multiple1: "bạn",
-			multiple2: "các bạn",
-			defaultWelcomeMessage: "Xin chào {userName}.\nChào mừng bạn đến với {boxName}.\nChúc bạn có buổi {session} vui vẻ!"
-		},
-		en: {
-			session1: "morning",
-			session2: "noon",
-			session3: "afternoon",
-			session4: "evening",
-			welcomeMessage: "Thank you for inviting me to the group!\nBot prefix: %1\nTo view the list of commands, please enter: %1help",
-			multiple1: "you",
-			multiple2: "you guys",
-			defaultWelcomeMessage: `Hello {userName}.\nWelcome {multiple} to the chat group: {boxName}\nHave a nice {session} 😊`
-		}
-	},
+  onStart: async ({ threadsData, message, event, api }) => {
+    if (event.logMessageType !== "log:subscribe") return;
 
-	onStart: async ({ threadsData, message, event, api, getLang }) => {
-		if (event.logMessageType == "log:subscribe")
-			return async function () {
-				const hours = getTime("HH");
-				const { threadID } = event;
-				const { nickNameBot } = global.GoatBot.config;
-				const prefix = global.utils.getPrefix(threadID);
-				const dataAddedParticipants = event.logMessageData.addedParticipants;
-				// if new member is bot
-				if (dataAddedParticipants.some((item) => item.userFbId == api.getCurrentUserID())) {
-					if (nickNameBot)
-						api.changeNickname(nickNameBot, threadID, api.getCurrentUserID());
-					
-					// Check if thread approval system is enabled
-					const { threadApproval } = global.GoatBot.config;
-					if (threadApproval && threadApproval.enable) {
-						try {
-							let threadData = await threadsData.get(threadID);
-							
-							// Always set new threads as unapproved
-							await threadsData.set(threadID, { approved: false });
-							
-							// Send notification to admin notification threads only (not to admin IDs)
-							if (threadApproval.adminNotificationThreads && threadApproval.adminNotificationThreads.length > 0 && threadApproval.sendNotifications !== false) {
-								// Use setTimeout to avoid immediate API conflicts
-								setTimeout(async () => {
-									try {
-										// Get thread info safely with retries
-										let threadInfo;
-										let addedByUser;
-										
-										try {
-											threadInfo = await api.getThreadInfo(threadID);
-										} catch (err) {
-											console.error(`Failed to get thread info for ${threadID}:`, err.message);
-											threadInfo = { threadName: "Unknown", participantIDs: [] };
-										}
-										
-										try {
-											addedByUser = await api.getUserInfo(event.author);
-										} catch (err) {
-											console.error(`Failed to get user info for ${event.author}:`, err.message);
-											addedByUser = { [event.author]: { name: "Unknown" } };
-										}
-										
-										const notificationMessage = `🔔 BOT ADDED TO NEW THREAD 🔔\n\n` +
-											`📋 Thread Name: ${threadInfo.threadName || "Unknown"}\n` +
-											`🆔 Thread ID: ${threadID}\n` +
-											`👤 Added by: ${addedByUser[event.author]?.name || "Unknown"}\n` +
-											`👥 Members: ${threadInfo.participantIDs?.length || 0}\n` +
-											`⏰ Time: ${new Date().toLocaleString()}\n\n` +
-											`⚠️ This thread is NOT APPROVED. Bot will not respond to any commands.\n` +
-											`Use "${prefix}mthread" to manage thread approvals.`;
-										
-										// Send notifications with proper error handling
-										for (const notifyThreadID of threadApproval.adminNotificationThreads) {
-											try {
-												await message.send(notificationMessage, notifyThreadID);
-											} catch (err) {
-												console.error(`Failed to send notification to thread ${notifyThreadID}:`, err.message);
-											}
-										}
-									} catch (err) {
-										console.error(`Failed to send notifications:`, err.message);
-									}
-								}, 3000); // 3 second delay to avoid API conflicts
-							}
-							
-							// Send warning message to the new thread if enabled
-							if (threadApproval.sendThreadMessage !== false) {
-								// Use setTimeout to avoid immediate API conflicts after bot addition
-								setTimeout(async () => {
-									try {
-										const warningMessage = `⚠️ This thread is not approved yet. Bot will not respond to any commands until approved by an admin.\n\nUse "${prefix}help" after approval to see available commands.`;
-										await message.send(warningMessage);
-									} catch (err) {
-										console.error(`Failed to send approval message to thread ${threadID}:`, err.message);
-									}
-								}, 5000); // 5 second delay for thread message
-							}
-							
-							return null; // Don't send welcome message for unapproved threads
-						} catch (err) {
-							console.error(`Thread approval system error:`, err.message);
-							// Continue with normal welcome if approval system fails
-						}
-					}
-					
-					// Use setTimeout to avoid immediate API conflicts
-					setTimeout(async () => {
-						try {
-							await message.send(getLang("welcomeMessage", prefix));
-						} catch (err) {
-							console.error(`Failed to send welcome message to thread ${threadID}:`, err.message);
-						}
-					}, 2000);
-					return null;
-				}
-				// if new member:
-				if (!global.temp.welcomeEvent[threadID])
-					global.temp.welcomeEvent[threadID] = {
-						joinTimeout: null,
-						dataAddedParticipants: []
-					};
+    const { threadID } = event;
+    const threadData = await threadsData.get(threadID);
+    if (threadData?.settings?.sendWelcomeMessage === false) return;
 
-				// push new member to array
-				global.temp.welcomeEvent[threadID].dataAddedParticipants.push(...dataAddedParticipants);
-				// if timeout is set, clear it
-				clearTimeout(global.temp.welcomeEvent[threadID].joinTimeout);
+    const threadInfo = await api.getThreadInfo(threadID);
+    const threadName = threadInfo.threadName || "এই গ্রুপ";
 
-				// set new timeout
-				global.temp.welcomeEvent[threadID].joinTimeout = setTimeout(async function () {
-					const threadData = await threadsData.get(threadID);
-					if (threadData.settings.sendWelcomeMessage == false)
-						return;
-					const dataAddedParticipants = global.temp.welcomeEvent[threadID].dataAddedParticipants;
-					const dataBanned = threadData.data.banned_ban || [];
-					const threadName = threadData.threadName;
-					const userName = [],
-						mentions = [];
-					let multiple = false;
+    for (const user of event.logMessageData.addedParticipants) {
+      try {
+        const userId = user.userFbId;
+        const userName = user.fullName;
 
-					if (dataAddedParticipants.length > 1)
-						multiple = true;
+        // 🖼 কার্ড বানানোর ফাংশন
+        const createWelcomeCard = async () => {
+          // Background (তুমি চাইলে এখানে নিজের লিংক বসাতে পারো)
+          const bgLinks = [
+            "https://i.imgur.com/dDSh0wc.jpeg",
+            "https://i.imgur.com/UucSRWJ.jpeg",
+            "https://i.imgur.com/V5L9dPi.jpeg",
+            "https://i.imgur.com/M7HEAMA.jpeg"
+          ];
+          const bg = await Canvas.loadImage(
+            bgLinks[Math.floor(Math.random() * bgLinks.length)]
+          );
 
-					for (const user of dataAddedParticipants) {
-						if (dataBanned.some((item) => item.id == user.userFbId))
-							continue;
-						userName.push(user.fullName);
-						mentions.push({
-							tag: user.fullName,
-							id: user.userFbId
-						});
-					}
-					// {userName}:   name of new member
-					// {multiple}:
-					// {boxName}:    name of group
-					// {threadName}: name of group
-					// {session}:    session of day
-					if (userName.length == 0) return;
-					let { welcomeMessage = getLang("defaultWelcomeMessage") } =
-						threadData.data;
-					const form = {
-						mentions: welcomeMessage.match(/\{userNameTag\}/g) ? mentions : null
-					};
-					welcomeMessage = welcomeMessage
-						.replace(/\{userName\}|\{userNameTag\}/g, userName.join(", "))
-						.replace(/\{boxName\}|\{threadName\}/g, threadName)
-						.replace(
-							/\{multiple\}/g,
-							multiple ? getLang("multiple2") : getLang("multiple1")
-						)
-						.replace(
-							/\{session\}/g,
-							hours <= 10
-								? getLang("session1")
-								: hours <= 12
-									? getLang("session2")
-									: hours <= 18
-										? getLang("session3")
-										: getLang("session4")
-						);
+          // User avatar
+          const avatarUrl = `https://graph.facebook.com/${userId}/picture?width=512&height=512`;
+          const avatar = await Canvas.loadImage(avatarUrl);
 
-					form.body = welcomeMessage;
+          // Canvas create
+          const canvas = Canvas.createCanvas(bg.width, bg.height);
+          const ctx = canvas.getContext("2d");
 
-					if (threadData.data.welcomeAttachment) {
-						const files = threadData.data.welcomeAttachment;
-						const attachments = files.reduce((acc, file) => {
-							acc.push(drive.getFile(file, "stream"));
-							return acc;
-						}, []);
-						form.attachment = (await Promise.allSettled(attachments))
-							.filter(({ status }) => status == "fulfilled")
-							.map(({ value }) => value);
-					}
-					message.send(form);
-					delete global.temp.welcomeEvent[threadID];
-				}, 1500);
-			};
-	}
+          // Background draw
+          ctx.drawImage(bg, 0, 0, canvas.width, canvas.height);
+
+          // Circle avatar
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(250, 250, 200, 0, Math.PI * 2, true);
+          ctx.closePath();
+          ctx.clip();
+          ctx.drawImage(avatar, 50, 50, 400, 400);
+          ctx.restore();
+
+          // Text
+          ctx.fillStyle = "#ffffff";
+          ctx.textAlign = "center";
+          ctx.font = "bold 80px Sans";
+          ctx.fillText(`স্বাগতম ${userName}`, canvas.width / 2, 600);
+
+          ctx.font = "bold 60px Sans";
+          ctx.fillText(`গ্রুপে: ${threadName}`, canvas.width / 2, 700);
+
+          const filePath = path.join(__dirname, "cache", `welcome_${userId}.png`);
+          fs.writeFileSync(filePath, canvas.toBuffer("image/png"));
+          return filePath;
+        };
+
+        // কার্ড বানাও
+        const cardPath = await createWelcomeCard();
+
+        // সময় বের করা
+        const timeNow = moment.tz("Asia/Dhaka").format("HH:mm:ss - DD/MM/YYYY (dddd)");
+
+        // ফাইনাল মেসেজ
+        const msg = {
+          body: `✨ স্বাগতম ${userName} 🎉\n\nআপনি এখন ${threadName} এর সদস্য!\n\n⏰ যোগ দেওয়ার সময়: ${timeNow}`,
+          attachment: fs.createReadStream(cardPath)
+        };
+
+        // Send
+        message.send(msg, threadID, () => {
+          fs.unlinkSync(cardPath); // পাঠানোর পর ছবি ডিলিট
+        });
+
+      } catch (err) {
+        console.error("WELCOME ERROR:", err);
+      }
+    }
+  }
 };
