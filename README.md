@@ -1,7 +1,5 @@
 <a><img src='https://i.imgur.com/LyHic3i.gif'/></a>
-<a><img <p align="center">
-  <a href="#"><img src="http://readme-typing-svg.herokuapp.com?color=cyan&center=true&vCenter=true&multiline=false&lines=`🔰𝗥𝗮𝗵𝗮𝘁_𝗕𝗼𝘁🔰`" alt="">
-</p>
+<a><img 
 src='https://i.imgur.com/LyHic3i.gif'/></a>
 ###  🔰𝗥𝗮𝗵𝗮𝘁_𝗕𝗼𝘁🔰
 ❖ **`বট রান দিতে চাইলে ফেসবুকে যোগাযোগ করো 
