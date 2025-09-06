@@ -1,27 +1,5 @@
-name: Build and Run Bot
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Start Bot
-        run: npm start
+এখানে রাহাদ file টা দিবে 🐸
+এই ফাইল ছাড়া কিন্তু বট চলবে না 
+ফেসবুক আইডিতে মেসেজ দাও
