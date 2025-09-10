@@ -16,6 +16,8 @@ src='https://i.imgur.com/LyHic3i.gif'/></a>
 <img src='https://i.imgur.com/fXVNrCK.jpeg'/>
 
 -------
+##কীভাবে বানাবো:👉 <a href="https://vm.tiktok.com/ZMAkVToUv/">ফুল ভিডিও</a>
+-------
 <p align="center">
   <a href="#"><img src="http://readme-typing-svg.herokuapp.com?color=cyan&center=true&vCenter=true&multiline=false&lines=`🔰𝗥𝗮𝗵𝗮𝘁_𝗕𝗼𝘁🔰`" alt="">
 </p>
