@@ -3,17 +3,17 @@
   <a href="#"><img src="http://readme-typing-svg.herokuapp.com?color=cyan&center=true&vCenter=true&multiline=false&lines=`🔰𝗥𝗮𝗵𝗮𝘁_𝗕𝗼𝘁🔰`" alt="">
 </p>
     
-<a><img       
-src='https://i.imgur.com/LyHic3i.gif'/></a>
-###  🔰𝗥𝗮𝗵𝗮𝘁_𝗕𝗼𝘁🔰
-❖ ***`বট রান দিতে চাইলে ফেসবুকে যোগাযোগ করো 
-❖👇নিচে আইডির লিঙ্ক আছে👇❖`** ❖
+<a><img src='https://i.imgur.com/LyHic3i.gif'/></a>
+
+### 🔰𝗥𝗮𝗵𝗮𝘁_𝗕𝗼𝘁🔰
+❖ ***`বট রান দিতে চাইলে ফেসবুকে যোগাযোগ করো`***  
+❖👇নিচে আইডির লিঙ্ক আছে👇❖  
 
 ----------
 ## Facebook ID:👉 <a href="https://www.facebook.com/rahat.islam.530399">Link</a>
 
 
-<img src='https://i.imgur.com/fXVNrCK.jpeg'/>
+<img src="https://drive.google.com/uc?export=view&id=1ffuCHREAPk0H29rhDzbPUYiRV_pvcQNA"/>
 
 -------
 <p align="center">
@@ -34,5 +34,3 @@ This project is licensed under the MIT License. You are free to use, modify, and
 
 **Original GoatBot V2** by NTKhang  
 **Enhanced & Maintained** by Sheikh Tamim
-
----
