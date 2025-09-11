@@ -4,7 +4,7 @@ module.exports.config = {
   hasPermssion: 0,
   credits: "CYBER BOT TEAM (API fix by Rahat)",
   description: "Apply AI art style (anime)",
-  category: "editing",
+  category: "IMAGE",
   usages: "reply to an image",
   cooldowns: 5
 };
