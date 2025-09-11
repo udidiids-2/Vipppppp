@@ -12,7 +12,7 @@ module.exports = {
     countDown: 5,
     role: 0,
     shortDescription: { en: "Couple frame (girlfriend)" },
-    category: "generator",
+    category: "GENERATOR",
     guide: { en: "{pn} @mention" }
   },
 
