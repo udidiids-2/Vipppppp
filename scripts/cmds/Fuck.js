@@ -12,7 +12,7 @@ module.exports = {
     countDown: 5,
     role: 2, // 🔒 Only bot admins can use
     shortDescription: { en: "Admin-only couple frame (swapped profiles)" },
-    category: "fun",
+    category: "FUN",
     guide: { en: "{pn} @mention" }
   },
 
