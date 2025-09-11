@@ -11,7 +11,7 @@ countDown: 5,
 role: 0,
 shortDescription: { en: "Edit image using prompt" },
 longDescription: { en: "Edit an uploaded image based on your prompt." },
-category: "image",
+category: "IMAGE",
 guide: { en: "{p}edit [prompt] (reply to image)" }
 },
 
