@@ -12,7 +12,7 @@ module.exports = {
     role: 0,
     shortDescription: "Bot's system status",
     longDescription: "Show system info: uptime, RAM, CPU, load, platform etc",
-    category: "system",
+    category: "RANK",
     guide: "{pn}"
   },
 
