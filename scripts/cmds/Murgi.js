@@ -8,7 +8,7 @@ module.exports = {
     role: 2, // বট এডমিন
     shortDescription: "Bad word spam with mention",
     longDescription: "",
-    category: "without prefix"
+    category: "generator"
   },
 
   onStart: async function ({ api, event }) {
