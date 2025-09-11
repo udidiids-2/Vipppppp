@@ -12,7 +12,7 @@ module.exports = {
     role: 0,
     shortDescription: "Upscale image to 4K",
     longDescription: "Upscale an image using smfahim.xyz",
-    category: "image",
+    category: "IMAGE",
     guide: {
       en: "{pn} [url] or reply to an image"
     },
