@@ -11,7 +11,7 @@ module.exports = {
     countDown: 5,
     role: 0, // সবাই ব্যবহার করতে পারবে
     shortDescription: { en: "Couple frame with perfect circle DPs (premium)" },
-    category: "fun",
+    category: "generator",
     guide: { en: "{pn} @mention" }
   },
 
