@@ -1,24 +1,21 @@
-// murgii.js — GoatBot V2 version (Admin + Special UID only)
+// murgii.js — GoatBot V2 version (Only Bot Admin)
 module.exports = {
   config: {
     name: "murgi",
-    version: "1.0.3",
+    version: "1.0.5",
     author: "nayan",
     countDown: 5,
-    role: 2, // বট এডমিন
+    role: 2, // ✅ শুধু Bot Admin
     shortDescription: "Bad word spam with mention",
     longDescription: "",
     category: "18+"
   },
 
   onStart: async function ({ api, event }) {
-    const senderID = event.senderID;
-    const specialUID = "61561511477968";
-
-    // ✅ Permission check: only admin or special UID
-    if (event.role !== 2 && senderID !== specialUID) {
+    // ✅ Permission check: শুধু Bot Admin
+    if (event.role !== 2) {
       return api.sendMessage(
-        "❌ আপনি এই কমান্ড ব্যবহার করে কাউকে চুদতে পারবেন না🥹🫵আপনার অনুমতি নেই",
+        "❌ এই কমান্ড শুধু Bot Admin এর জন্য",
         event.threadID,
         event.messageID
       );
@@ -26,7 +23,7 @@ module.exports = {
 
     const mention = Object.keys(event.mentions || {})[0];
     if (!mention) {
-      return api.sendMessage("আপনি কাকে চুদতে চান তাকে mention করুন", event.threadID);
+      return api.sendMessage("👉 যাকে চুদে লাল করতে চাও তাকে mention করো ", event.threadID);
     }
 
     const name = event.mentions[mention];
