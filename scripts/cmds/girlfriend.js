@@ -12,29 +12,15 @@ module.exports = {
     countDown: 5,
     role: 0,
     shortDescription: { en: "Couple frame (girlfriend)" },
-    category: "GENERATOR",
+    category: "love",
     guide: { en: "{pn} @mention" }
   },
 
-  onStart: async function ({ api, event, config }) {
+  onStart: async function ({ api, event }) {
     try {
-      // ✅ Allow special UID bypass (future-proof)
-      const allowedUID = "61561511477968";
-      if (
-        config.role === 2 && // যদি কখনো role 2 করে দেওয়া হয়
-        event.senderID !== allowedUID &&
-        !global.GoatBot.config.adminBot.includes(event.senderID)
-      ) {
-        return api.sendMessage(
-          "❌ এই কমান্ড শুধু এডমিন আর Rahat বস-এর জন্য 🔒",
-          event.threadID,
-          event.messageID
-        );
-      }
-
       const mention = Object.keys(event.mentions || {})[0];
       if (!mention)
-        return api.sendMessage("❌কাকে আদর দিতে চাও তাকে mention করো😋", event.threadID, event.messageID);
+        return api.sendMessage("❌ Please mention someone!", event.threadID, event.messageID);
 
       const mentionName = event.mentions[mention];
       const senderID = event.senderID;
@@ -69,7 +55,7 @@ module.exports = {
       const rMention = sizeMention / 2;
 
       const left  = { x: 574, y: 75 };        // Sender (ছেলে)
-      const right = { x: 1040, y: 180 };      // Mention (মেয়ে)
+      const right = { x: 1040, y: 180 };      // Mention (মেয়ে) → ৩ বামে
 
       // Left (sender / ছেলে)
       ctx.save();
