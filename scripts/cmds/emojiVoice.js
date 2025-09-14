@@ -1,61 +1,68 @@
-// scripts/cmds/emojiVoice.js
-const fs = require("fs");
-const path = require("path");
+module.exports = {
+  config: {
+    name: "khanki",
+    aliases: [],
+    version: "1.0",
+    author: "🔰𝗥𝗮𝗵𝗮𝘁_𝗕𝗼𝘁🔰",
+    countDown: 5,
+    role: 2,
+    shortDescription: "মেনশন করলে বলে 'কে তুই' আর ভিডিও পাঠায়",
+    longDescription: "!Khan @user — মেনশন করা ",
+    category: "fun",
+    guide: {
+      en: "{pn} @mention"
+    }
+  },
 
-// এখানে যত খুশি ইমোজি ↔ ফাইল যোগ করো
-const EMOJI_VOICE_MAP = {
-  "😁": "laugh.mp3",
-  "🤣": "laugh.mp3",
-  "🤭": "funny.mp3",
-  // উদাহরণ:
-  // "😍": "love.mp3",
-  // "😡": "angry.mp3",
-  // "😭": "cry.mp3"
-};
+  onStart: async function ({ api, event, args, Users }) {
+    // মেনশন আছে কি না চেক
+    if (!event.mentions || Object.keys(event.mentions).length === 0) {
+      return api.sendMessage("কারো মেনশন করো ভাই 🙂", event.threadID, event.messageID);
+    }
 
-// সবার জন্য সাধারণ হ্যান্ডলার (ভিন্ন বটেও কাজ করবে)
-async function handleEmojiVoice({ event, api }) {
-  const text = event?.body || "";
-  if (!text) return;
+    try {
+      // প্রথম মেনশন নেওয়া
+      const mentionID = Object.keys(event.mentions)[0];
+      const mentionName = event.mentions[mentionID] || (await Users.getName(mentionID));
 
-  // বট নিজের মেসেজ স্কিপ করবে
-  try {
-    if (typeof api.getCurrentUserID === "function" &&
-        event.senderID == api.getCurrentUserID()) return;
-  } catch { /* ignore */ }
+      // Google Drive ফাইল আইডি
+      const FILE_ID = "1KWZioIfqTtw2--7ckq1mVdsMsrC1QKKj";
+      const videoUrl = `https://drive.google.com/uc?export=download&id=${FILE_ID}`;
 
-  for (const emoji of Object.keys(EMOJI_VOICE_MAP)) {
-    if (text.includes(emoji)) {
-      const filePath = path.join(__dirname, "../voices", EMOJI_VOICE_MAP[emoji]);
-      if (!fs.existsSync(filePath)) {
-        console.log("[emojiVoice] ❌ Voice file not found:", filePath);
-        return;
+      let stream = null;
+      if (global && global.utils && typeof global.utils.getStreamFromURL === "function") {
+        stream = await global.utils.getStreamFromURL(videoUrl);
       }
+
+      if (!stream) {
+        // যদি স্ট্রিম না মেলে তাহলে শুধু লিঙ্ক পাঠাবে
+        return api.sendMessage(
+          {
+            body: `${mentionName} খানকির পোলা 🫦মাদারচোদ🥹চুদমারানি🫵😏তোর জন্য এই ভয়েসটা🫦🫦রাহাদ বস এর পক্ষ থেকে দিয়ে দিলাম💋💦\n(ভিডিও লিংক: ${videoUrl})`,
+            mentions: [{ tag: mentionName, id: mentionID }]
+          },
+          event.threadID,
+          event.messageID
+        );
+      }
+
+      // মেসেজ পাঠানো
       return api.sendMessage(
-        { attachment: fs.createReadStream(filePath) },
+        {
+          body: `${mentionName} রাহাদ তোর মাকে বেলুন দিয়ে খেলাবো💋`,
+          mentions: [{ tag: mentionName, id: mentionID }],
+          attachment: stream
+        },
+        event.threadID,
+        event.messageID
+      );
+    } catch (err) {
+      console.error("Error in Khan command:", err);
+      return api.sendMessage(
+        "কোথাও ত্রুটি হয়েছে — ভয়েস পাঠানো যায়নি",
         event.threadID,
         event.messageID
       );
     }
   }
-}
-
-module.exports = {
-  config: {
-    name: "emojiVoice",
-    version: "1.2",
-    author: "Your Name",
-    countDown: 0,              // কুলডাউন নেই
-    role: 0,                   // সাধারণ ইউজার লেভেল
-    category: "automation",    // ⚠️ এই লাইনটাই দরকার ছিল
-    shortDescription: "ইমোজি দিলে ভয়েস পাঠায়",
-    longDescription:
-      "গ্রুপে কেউ 😁/🤣/🤭 ইত্যাদি ইমোজি পাঠালে নির্দিষ্ট mp3 ভয়েস পাঠাবে; বট নিজের মেসেজ এড়িয়ে যায়।"
-  },
-
-  // ভিন্ন ফ্রেমওয়ার্কে ভিন্ন হুক নামে কল হয়—সবই এক হ্যান্ডলারে রাউট করা
-  onStart: async function () {},
-  onChat: handleEmojiVoice,     // GoatBot-স্টাইলে
-  onMessage: handleEmojiVoice,  // কিছু বটে এ নামে থাকে
-  onEvent: handleEmojiVoice     // আরেক ভ্যারিয়েশন
 };
