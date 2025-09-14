@@ -20,13 +20,12 @@ module.exports = {
   config: {
     name: "Khanki",
     aliases: [],
-    version: "2.0",
+    version: "3.0",
     author: "🔰𝗥𝗮𝗵𝗮𝘁_𝗕𝗼𝘁🔰",
     countDown: 5,
     role: 2,
-    shortDescription: "মেনশন করো",
-    longDescription:
-      "!Khan @user — মেনশন করা ",
+    shortDescription: "অডিও পাঠাবে",
+    longDescription: "!Khanki @user '",
     category: "fun",
     guide: {
       en: "{pn} @mention"
@@ -35,7 +34,7 @@ module.exports = {
 
   onStart: async function ({ api, event, args, Users }) {
     if (!event.mentions || Object.keys(event.mentions).length === 0) {
-      return api.sendMessage("কারো মেনশন করো বস 🙂", event.threadID, event.messageID);
+      return api.sendMessage("কারো মেনশন করো 𝗥𝗮𝗵𝗮𝘁 Boss 🙂", event.threadID, event.messageID);
     }
 
     try {
@@ -48,21 +47,29 @@ module.exports = {
 
       if (!voiceFile) {
         return api.sendMessage(
-          `${mentionName} খানকির পোলা🫦মাদারচোদ💦তোর জন্য ভয়েসটা😏Rahat বসের বদলে আমি চুদে দিলাম💋💦\n⚠️ খুঁজেও কোনো ভয়েস পাওয়া গেল না`,
+          `${mentionName} খানকির পোলা🫦মাদারচোদ💦তোর জন্য ভয়েসটা😏 𝗥𝗮𝗵𝗮𝘁 বসের বদলে আমি চুদে দিলাম💋💦\n⚠️ খুঁজেও কোনো ভয়েস পাওয়া গেল না`,
           event.threadID,
           event.messageID
         );
       }
 
-      return api.sendMessage(
+      // প্রথমে অডিও পাঠানো
+      await api.sendMessage(
         {
-          body: `${mentionName} খানকির পোলা🫦মাদারচোদ💦তোর জন্য ভয়েসটা😏Rahat বসের বদলে আমি চুদে দিলাম💋💦`,
-          mentions: [{ tag: mentionName, id: mentionID }],
           attachment: fs.createReadStream(voiceFile)
         },
-        event.threadID,
-        event.messageID
+        event.threadID
       );
+
+      // তারপর মেনশন মেসেজ পাঠানো
+      return api.sendMessage(
+        {
+          body: `${mentionName} খানকির পোলা🫦মাদারচোদ💦তোর জন্য ভয়েসটা😏 𝗥𝗮𝗵𝗮𝘁 বসের বদলে আমি চুদে দিলাম💋💦`,
+          mentions: [{ tag: mentionName, id: mentionID }]
+        },
+        event.threadID
+      );
+
     } catch (err) {
       console.error("Error in Khanki command:", err);
       return api.sendMessage(
