@@ -1,16 +1,32 @@
 const fs = require("fs");
 const path = require("path");
 
+function findFileRecursive(dir, filename) {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const fullPath = path.join(dir, file);
+    const stat = fs.statSync(fullPath);
+    if (stat.isDirectory()) {
+      const found = findFileRecursive(fullPath, filename);
+      if (found) return found;
+    } else if (file.toLowerCase() === filename.toLowerCase()) {
+      return fullPath;
+    }
+  }
+  return null;
+}
+
 module.exports = {
   config: {
-    name: "khanki",
+    name: "Khanki",
     aliases: [],
-    version: "1.0",
+    version: "2.0",
     author: "🔰𝗥𝗮𝗵𝗮𝘁_𝗕𝗼𝘁🔰",
     countDown: 5,
     role: 2,
     shortDescription: "মেনশন করো",
-    longDescription: "!Khan @user — মেনশন করা ",
+    longDescription:
+      "!Khan @user — মেনশন করা ",
     category: "fun",
     guide: {
       en: "{pn} @mention"
@@ -18,41 +34,39 @@ module.exports = {
   },
 
   onStart: async function ({ api, event, args, Users }) {
-    // মেনশন আছে কি না চেক
     if (!event.mentions || Object.keys(event.mentions).length === 0) {
-      return api.sendMessage("কোন একটা খানকি-কে মেনশন করো Boss 🙂", event.threadID, event.messageID);
+      return api.sendMessage("কারো মেনশন করো বস 🙂", event.threadID, event.messageID);
     }
 
     try {
-      // প্রথম মেনশন নেওয়া
       const mentionID = Object.keys(event.mentions)[0];
       const mentionName = event.mentions[mentionID] || (await Users.getName(mentionID));
 
-      // ভিডিওর লোকাল ফাইল পাথ (আপনার ভিডিওর নাম অনুযায়ী বদলান)
-      const videoPath = path.join(__dirname, "..", "voice", "Khan.mp4.mp3");
+      // যেকোনো যায়গা থেকে খুঁজবে
+      const projectRoot = process.cwd();
+      const voiceFile = findFileRecursive(projectRoot, "Khan.mp4.mp3");
 
-      if (!fs.existsSync(videoPath)) {
+      if (!voiceFile) {
         return api.sendMessage(
-          `${mentionName} খানকির পোলা🫦মাদারচোদ💦তোর জন্য ভয়েসটা😏Rahat বসের বদলে আমি চুদে দিলাম💋💦\n(⚠️ অডিও ফাইল পাওয়া যায়নি: ${videoPath})`,
+          `${mentionName} খানকির পোলা🫦মাদারচোদ💦তোর জন্য ভয়েসটা😏Rahat বসের বদলে আমি চুদে দিলাম💋💦\n⚠️ খুঁজেও কোনো ভয়েস পাওয়া গেল না`,
           event.threadID,
           event.messageID
         );
       }
 
-      // মেসেজ পাঠানো
       return api.sendMessage(
         {
           body: `${mentionName} খানকির পোলা🫦মাদারচোদ💦তোর জন্য ভয়েসটা😏Rahat বসের বদলে আমি চুদে দিলাম💋💦`,
           mentions: [{ tag: mentionName, id: mentionID }],
-          attachment: fs.createReadStream(videoPath)
+          attachment: fs.createReadStream(voiceFile)
         },
         event.threadID,
         event.messageID
       );
     } catch (err) {
-      console.error("Error in Khan command:", err);
+      console.error("Error in Khanki command:", err);
       return api.sendMessage(
-        "কোথাও ত্রুটি হয়েছে — অডিও পাঠানো যায়নি।",
+        "ত্রুটি হলেও ভয় নেই 🙂 বট ক্র্যাশ করবে না, কিন্তু ভয়েস ফাইল পাওয়া যায়নি।",
         event.threadID,
         event.messageID
       );
