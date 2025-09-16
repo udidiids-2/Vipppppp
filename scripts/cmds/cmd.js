@@ -6,7 +6,7 @@ const cheerio = require("cheerio");
 const { client } = global;
 
 const { configCommands } = global.GoatBot;
-const { log, loading, removeHomeDir } = global.utils;
+const { log, loading, removeHomeDir, getPrefix } = global.utils;
 
 function getDomain(url) {
 	const regex = /^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:/\n]+)/im;
@@ -27,8 +27,8 @@ function isURL(str) {
 module.exports = {
 	config: {
 		name: "cmd",
-		version: "1.17",
-		author: "NTKhang",
+		version: "2.3.5",
+		author: "ST",
 		countDown: 5,
 		role: 2,
 		description: {
@@ -170,16 +170,51 @@ module.exports = {
 		else if (args[0] == "del" || args[0] == "delete") {
 			if (!args[1])
 				return message.reply(getLang("missingCommandNameUnload"));
-			
+
 			const fileName = args[1].endsWith('.js') ? args[1] : args[1] + '.js';
 			const filePath = path.join(__dirname, fileName);
-			
+
 			if (!fs.existsSync(filePath))
 				return message.reply(getLang("missingFile", fileName));
-			
-			return message.reply(getLang("confirmDelete", fileName), (err, info) => {
+
+			// If user provided "confirm" as third argument, delete immediately
+			if (args[2] && args[2].toLowerCase() === "confirm") {
+				try {
+					// First unload the command if it's loaded
+					try {
+						const commandNameFromFile = fileName.endsWith('.js') ? fileName.slice(0, -3) : fileName;
+						unloadScripts("cmds", commandNameFromFile, configCommands, getLang);
+					} catch (unloadError) {
+						// Continue with deletion even if unload fails
+					}
+
+					// Then delete the file
+					if (fs.existsSync(filePath)) {
+						fs.unlinkSync(filePath);
+						message.reply(getLang("deletedFile", fileName));
+					} else {
+						message.reply(getLang("missingFile", fileName));
+					}
+				} catch (error) {
+					message.reply(getLang("deleteError", fileName, error.message));
+				}
+			}
+
+			// Otherwise, ask for confirmation via reaction or reply
+			return message.reply(getLang("confirmDelete", fileName) + "\n\n💡 You can also reply 'yes' to confirm or use: " + getPrefix(event.threadID) + "cmd del " + args[1] + " confirm", (err, info) => {
 				global.GoatBot.onReaction.set(info.messageID, {
 					commandName,
+					messageID: info.messageID,
+					type: "delete",
+					author: event.senderID,
+					data: {
+						fileName: args[1],
+						filePath
+					}
+				});
+
+				global.GoatBot.onReply.set(info.messageID, {
+					commandName: "cmd",
 					messageID: info.messageID,
 					type: "delete",
 					author: event.senderID,
@@ -277,14 +312,80 @@ module.exports = {
 			message.SyntaxError();
 	},
 
+	onReply: async function ({ Reply, message, event, getLang }) {
+		const { author, type, data } = Reply;
+
+		// Check if the user replying is the same as the author of the original command
+		if (event.senderID != author) {
+			return message.reply("❌ Only the original command author can confirm this action");
+		}
+
+		// Check if user is bot admin
+		const { config } = global.GoatBot;
+		const userID = event.senderID;
+		const isAdminBot = config.adminBot.includes(userID.toString()) || config.adminBot.includes(userID);
+
+		if (!isAdminBot) {
+			return message.reply("❌ Only bot's admin can use this command");
+		}
+
+		const userResponse = event.body.toLowerCase().trim();
+
+		if (type == "delete" && (userResponse === "yes" || userResponse === "y" || userResponse === "confirm")) {
+			const { unloadScripts } = global.utils;
+			const { fileName, filePath } = data;
+			const { configCommands } = global.GoatBot;
+
+			// Delete the reply message
+			Reply.delete();
+
+			try {
+				// First unload the command if it's loaded
+				try {
+					const commandNameFromFile = fileName.endsWith('.js') ? fileName.slice(0, -3) : fileName;
+					unloadScripts("cmds", commandNameFromFile, configCommands, getLang);
+				} catch (unloadError) {
+					// Continue with deletion even if unload fails
+				}
+
+				// Then delete the file
+				if (fs.existsSync(filePath)) {
+					fs.unlinkSync(filePath);
+					message.reply(getLang("deletedFile", fileName));
+				} else {
+					message.reply(getLang("missingFile", fileName));
+				}
+			} catch (error) {
+				message.reply(getLang("deleteError", fileName, error.message));
+			}
+		} else if (type == "delete") {
+			Reply.delete();
+			message.reply("❌ Deletion cancelled. Please reply with 'yes' or 'confirm' to delete the file.");
+		}
+	},
+
 	onReaction: async function ({ Reaction, message, event, api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getLang }) {
 		const { loadScripts, unloadScripts } = global.utils;
 		const { author, type, data } = Reaction;
-		if (event.userID != author)
-			return;
-		
+
+		// Check if user is bot admin first
+		const { config } = global.GoatBot;
+		const userID = event.userID;
+		const isAdminBot = config.adminBot.includes(userID.toString()) || config.adminBot.includes(userID);
+
+		if (!isAdminBot) {
+			return message.reply("❌ Only bot's admin can use the reaction function of the command 'cmd'");
+		}
+
+		// For cmd command, allow any admin to react, not just the author
+		// This is because cmd is an admin-only command
+
+		// Delete the reaction message after processing
+		Reaction.delete();
+
 		if (type == "install") {
 			const { fileName, rawCode } = data;
+			const { configCommands } = global.GoatBot;
 			const infoLoad = loadScripts("cmds", fileName, log, configCommands, api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, getLang, rawCode);
 			infoLoad.status == "success" ?
 				message.reply(getLang("installed", infoLoad.name, path.join(__dirname, fileName).replace(process.cwd(), ""))) :
@@ -292,17 +393,23 @@ module.exports = {
 		}
 		else if (type == "delete") {
 			const { fileName, filePath } = data;
+			const { configCommands } = global.GoatBot;
 			try {
 				// First unload the command if it's loaded
 				try {
-					unloadScripts("cmds", fileName, configCommands, getLang);
-				} catch (err) {
-					// Ignore if command is not loaded
+					const commandNameFromFile = fileName.endsWith('.js') ? fileName.slice(0, -3) : fileName;
+					unloadScripts("cmds", commandNameFromFile, configCommands, getLang);
+				} catch (unloadError) {
+					// Continue with deletion even if unload fails
 				}
-				
-				// Delete the file
-				fs.unlinkSync(filePath);
-				message.reply(getLang("deletedFile", fileName));
+
+				// Then delete the file
+				if (fs.existsSync(filePath)) {
+					fs.unlinkSync(filePath);
+					message.reply(getLang("deletedFile", fileName));
+				} else {
+					message.reply(getLang("missingFile", fileName));
+				}
 			} catch (error) {
 				message.reply(getLang("deleteError", fileName, error.message));
 			}
@@ -403,183 +510,4 @@ function loadScripts(folder, fileName, log, configCommands, api, threadModel, us
 		if (oldCommand.config.aliases) {
 			let oldAliases = oldCommand.config.aliases;
 			if (typeof oldAliases == "string")
-				oldAliases = [oldAliases];
-			for (const alias of oldAliases)
-				GoatBot.aliases.delete(alias);
-		}
-		// ——————————————— DELETE OLD COMMAND ——————————————— //
-		delete require.cache[require.resolve(pathCommand)];
-		// —————————————————————————————————————————————————— //
-
-
-
-		// ———————————————— GET NEW COMMAND ———————————————— //
-		const command = require(pathCommand);
-		command.location = pathCommand;
-		const configCommand = command.config;
-		if (!configCommand || typeof configCommand != "object")
-			throw new Error("config of command must be an object");
-		// —————————————————— CHECK SYNTAX —————————————————— //
-		const scriptName = configCommand.name;
-
-		// Check onChat function
-		const indexOnChat = allOnChat.findIndex(item => item == oldCommandName);
-		if (indexOnChat != -1)
-			allOnChat.splice(indexOnChat, 1);
-
-		// Check onFirstChat function
-		const indexOnFirstChat = allOnChat.findIndex(item => item == oldCommandName);
-		let oldOnFirstChat;
-		if (indexOnFirstChat != -1) {
-			oldOnFirstChat = allOnFirstChat[indexOnFirstChat];
-			allOnFirstChat.splice(indexOnFirstChat, 1);
-		}
-
-		// Check onEvent function
-		const indexOnEvent = allOnEvent.findIndex(item => item == oldCommandName);
-		if (indexOnEvent != -1)
-			allOnEvent.splice(indexOnEvent, 1);
-
-		// Check onAnyEvent function
-		const indexOnAnyEvent = allOnAnyEvent.findIndex(item => item == oldCommandName);
-		if (indexOnAnyEvent != -1)
-			allOnAnyEvent.splice(indexOnAnyEvent, 1);
-
-		// Check onLoad function
-		if (command.onLoad)
-			command.onLoad({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData });
-
-		const { envGlobal, envConfig } = configCommand;
-		if (!command.onStart)
-			throw new Error('Function onStart is missing!');
-		if (typeof command.onStart != "function")
-			throw new Error('Function onStart must be a function!');
-		if (!scriptName)
-			throw new Error('Name of command is missing!');
-		// ————————————————— CHECK ALIASES ————————————————— //
-		if (configCommand.aliases) {
-			let { aliases } = configCommand;
-			if (typeof aliases == "string")
-				aliases = [aliases];
-			for (const alias of aliases) {
-				if (aliases.filter(item => item == alias).length > 1)
-					throw new Error(`alias "${alias}" duplicate in ${commandType} "${scriptName}" with file name "${removeHomeDir(pathCommand || "")}"`);
-				if (GoatBot.aliases.has(alias))
-					throw new Error(`alias "${alias}" is already exist in ${commandType} "${GoatBot.aliases.get(alias)}" with file name "${removeHomeDir(GoatBot[setMap].get(GoatBot.aliases.get(alias))?.location || "")}"`);
-				GoatBot.aliases.set(alias, scriptName);
-			}
-		}
-		// ————————————————— CHECK ENVCONFIG ————————————————— //
-		// env Global
-		if (envGlobal) {
-			if (typeof envGlobal != "object" || Array.isArray(envGlobal))
-				throw new Error("envGlobal must be an object");
-			for (const key in envGlobal)
-				configCommands.envGlobal[key] = envGlobal[key];
-		}
-		// env Config
-		if (envConfig && typeof envConfig == "object" && !Array.isArray(envConfig)) {
-			if (!configCommands[typeEnvCommand][scriptName])
-				configCommands[typeEnvCommand][scriptName] = {};
-			configCommands[typeEnvCommand][scriptName] = envConfig;
-		}
-		GoatBot[setMap].delete(oldCommandName);
-		GoatBot[setMap].set(scriptName, command);
-		fs.writeFileSync(client.dirConfigCommands, JSON.stringify(configCommands, null, 2));
-		const keyUnloadCommand = folder == "cmds" ? "commandUnload" : "commandEventUnload";
-		const findIndex = (configCommands[keyUnloadCommand] || []).indexOf(`${fileName}.js`);
-		if (findIndex != -1)
-			configCommands[keyUnloadCommand].splice(findIndex, 1);
-		fs.writeFileSync(client.dirConfigCommands, JSON.stringify(configCommands, null, 2));
-
-
-		if (command.onChat)
-			allOnChat.push(scriptName);
-
-		if (command.onFirstChat)
-			allOnFirstChat.push({ commandName: scriptName, threadIDsChattedFirstTime: oldOnFirstChat?.threadIDsChattedFirstTime || [] });
-
-		if (command.onEvent)
-			allOnEvent.push(scriptName);
-
-		if (command.onAnyEvent)
-			allOnAnyEvent.push(scriptName);
-
-		const indexStorageCommandFilesPath = storageCommandFilesPath.findIndex(item => item.filePath == pathCommand);
-		if (indexStorageCommandFilesPath != -1)
-			storageCommandFilesPath.splice(indexStorageCommandFilesPath, 1);
-		storageCommandFilesPath.push({
-			filePath: pathCommand,
-			commandName: [scriptName, ...configCommand.aliases || []]
-		});
-
-		return {
-			status: "success",
-			name: fileName,
-			command
-		};
-	}
-	catch (err) {
-		const defaultError = new Error();
-		defaultError.name = err.name;
-		defaultError.message = err.message;
-		defaultError.stack = err.stack;
-
-		err.stack ? err.stack = removeHomeDir(err.stack || "") : "";
-		fs.writeFileSync(global.client.dirConfigCommands, JSON.stringify(configCommands, null, 2));
-		return {
-			status: "failed",
-			name: fileName,
-			error: err,
-			errorWithThoutRemoveHomeDir: defaultError
-		};
-	}
-}
-
-function unloadScripts(folder, fileName, configCommands, getLang) {
-	const pathCommand = `${process.cwd()}/scripts/${folder}/${fileName}.js`;
-	if (!fs.existsSync(pathCommand)) {
-		const err = new Error(getLang("missingFile", `${fileName}.js`));
-		err.name = "FileNotFound";
-		throw err;
-	}
-	const command = require(pathCommand);
-	const commandName = command.config?.name;
-	if (!commandName)
-		throw new Error(getLang("invalidFileName", `${fileName}.js`));
-	const { GoatBot } = global;
-	const { onChat: allOnChat, onEvent: allOnEvent, onAnyEvent: allOnAnyEvent } = GoatBot;
-	const indexOnChat = allOnChat.findIndex(item => item == commandName);
-	if (indexOnChat != -1)
-		allOnChat.splice(indexOnChat, 1);
-	const indexOnEvent = allOnEvent.findIndex(item => item == commandName);
-	if (indexOnEvent != -1)
-		allOnEvent.splice(indexOnEvent, 1);
-	const indexOnAnyEvent = allOnAnyEvent.findIndex(item => item == commandName);
-	if (indexOnAnyEvent != -1)
-		allOnAnyEvent.splice(indexOnAnyEvent, 1);
-	// ————————————————— CHECK ALIASES ————————————————— //
-	if (command.config.aliases) {
-		let aliases = command.config?.aliases || [];
-		if (typeof aliases == "string")
-			aliases = [aliases];
-		for (const alias of aliases)
-			GoatBot.aliases.delete(alias);
-	}
-	const setMap = folder == "cmds" ? "commands" : "eventCommands";
-	delete require.cache[require.resolve(pathCommand)];
-	GoatBot[setMap].delete(commandName);
-	log.master("UNLOADED", getLang("unloaded", commandName));
-	const commandUnload = configCommands[folder == "cmds" ? "commandUnload" : "commandEventUnload"] || [];
-	if (!commandUnload.includes(`${fileName}.js`))
-		commandUnload.push(`${fileName}.js`);
-	configCommands[folder == "cmds" ? "commandUnload" : "commandEventUnload"] = commandUnload;
-	fs.writeFileSync(global.client.dirConfigCommands, JSON.stringify(configCommands, null, 2));
-	return {
-		status: "success",
-		name: fileName
-	};
-}
-
-global.utils.loadScripts = loadScripts;
-global.utils.unloadScripts = unloadScripts;
+				oldAliases = [ol
