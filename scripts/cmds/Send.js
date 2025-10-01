@@ -33,28 +33,37 @@ module.exports = {
     },
 
     onStart: async function({ message, event, args, usersData, getLang }) {
+        // Check if user mention and amount exist
         if (!args[0] || !args[1]) return message.reply(getLang("usage"));
 
-        const mentionID = args[0].replace(/[^0-9]/g, "");
-        const amount = parseInt(args[1]);
+        // Extract mention ID
+        const mentionID = Object.keys(event.mentions)[0] || args[0].replace(/[^0-9]/g, "");
+        if (!mentionID) return message.reply(getLang("usage"));
 
+        // Clean and parse amount
+        let amount = args[1].replace(/[^0-9]/g, '');
+        amount = parseInt(amount, 10);
         if (isNaN(amount) || amount <= 0) return message.reply(getLang("invalidAmount"));
 
-        let senderData = await usersData.get(event.senderID);
-        let receiverData = await usersData.get(mentionID);
+        try {
+            // Ensure both users exist
+            await usersData.create(event.senderID);
+            await usersData.create(mentionID);
 
-        if (!senderData) senderData = { money: 0 };
-        if (!receiverData) receiverData = { money: 0 };
+            // Get sender money
+            const senderMoney = await usersData.getMoney(event.senderID);
+            if (senderMoney < amount) return message.reply(getLang("notEnough"));
 
-        if (senderData.money < amount) return message.reply(getLang("notEnough"));
+            // Subtract from sender, add to receiver
+            await usersData.subtractMoney(event.senderID, amount);
+            await usersData.addMoney(mentionID, amount);
 
-        // Transfer money
-        senderData.money -= amount;
-        receiverData.money += amount;
-
-        await usersData.set(event.senderID, senderData);
-        await usersData.set(mentionID, receiverData);
-
-        message.reply(getLang("success", amount, event.mentions[mentionID] || "Unknown"));
+            // Reply success
+            message.reply(getLang("success", amount, event.mentions[mentionID] || "Unknown"));
+        }
+        catch (err) {
+            console.error(err);
+            message.reply("❌ Something went wrong while sending money.");
+        }
     }
 };
