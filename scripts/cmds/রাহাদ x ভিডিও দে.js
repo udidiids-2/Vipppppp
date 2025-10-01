@@ -1,7 +1,7 @@
 module.exports = {
   config: {
     name: "রাহাদ x ভিডিও দে.js",
-    aliases: ["sex", "রাহাদ_x_ভিডিও_দে"],
+    aliases: ["sax", "রাহাদ_x_ভিডিও_দে"],
     version: "2.0",
     author: "nexo_here",
     countDown: 30,
