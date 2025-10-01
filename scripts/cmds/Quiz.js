@@ -55,31 +55,39 @@ module.exports = {
       return api.sendMessage(formatted, threadID, async (err, info) => {
         if (err) return;
 
+        // messageID কে string এ convert করা
+        const msgID = String(info.messageID);
+
         const timeout = setTimeout(async () => {
-          const index = global.GoatBot.onReply.findIndex(e => e.messageID === info.messageID);
+          const index = global.GoatBot.onReply.findIndex(e => e.messageID === msgID);
           if (index !== -1) {
             api.sendMessage(`⏰ সময় শেষ!\n✅ সঠিক উত্তর ছিল: ${data.answer}`, threadID);
             global.GoatBot.onReply.splice(index, 1);
           }
         }, 20000);
 
+        if (!global.GoatBot.onReply) global.GoatBot.onReply = [];
+
         global.GoatBot.onReply.push({
           commandName: this.config.name,
-          messageID: info.messageID,
+          messageID: msgID,
           author: senderID,
-          correct: data.answer,
+          correct: data.answer.toUpperCase(), // ensure uppercase
           timeout
         });
       });
 
     } catch (err) {
+      console.error(err);
       return api.sendMessage("❌ কুইজ লোড করতে ব্যর্থ!", threadID, messageID);
     }
   },
 
   onReply: async function ({ api, event, Reply, usersData }) {
     const { senderID, messageID, threadID, body } = event;
-    if (senderID !== Reply.author) return;
+
+    // শুধুমাত্র মূল author কে allow করা
+    if (!Reply || senderID != Reply.author) return;
 
     const answer = body.trim().toUpperCase();
     if (!["A", "B", "C", "D"].includes(answer)) {
@@ -87,23 +95,31 @@ module.exports = {
     }
 
     clearTimeout(Reply.timeout);
+
     const userData = await usersData.get(senderID);
 
+    // সঠিক উত্তর
     if (answer === Reply.correct) {
+      const newMoney = userData.money + 1000;
       await usersData.set(senderID, { 
-        money: userData.money + 1000, 
+        money: newMoney, 
         exp: userData.exp, 
         data: userData.data 
       });
-      return api.sendMessage(`✅ সঠিক উত্তর!\n💰 +1000 কয়েন\n📌 নতুন Balance: ${userData.money + 1000}`, threadID, messageID);
+      api.sendMessage(`✅ সঠিক উত্তর!\n💰 +1000 কয়েন\n📌 নতুন Balance: ${newMoney}`, threadID, messageID);
     } else {
+      // ভুল উত্তর
       const newMoney = Math.max(userData.money - 50, 0);
       await usersData.set(senderID, { 
         money: newMoney, 
         exp: userData.exp, 
         data: userData.data 
       });
-      return api.sendMessage(`❌ ভুল উত্তর!\n✅ সঠিক: ${Reply.correct}\n💸 -50 কয়েন\n📌 নতুন Balance: ${newMoney}`, threadID, messageID);
+      api.sendMessage(`❌ ভুল উত্তর!\n✅ সঠিক: ${Reply.correct}\n💸 -50 কয়েন\n📌 নতুন Balance: ${newMoney}`, threadID, messageID);
     }
+
+    // onReply থেকে remove করা
+    const index = global.GoatBot.onReply.findIndex(e => e.messageID === Reply.messageID);
+    if (index !== -1) global.GoatBot.onReply.splice(index, 1);
   }
 };
